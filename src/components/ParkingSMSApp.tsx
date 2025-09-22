@@ -7,18 +7,23 @@ import { VehicleCard } from '@/components/VehicleCard';
 import { AddVehicleDialog } from '@/components/AddVehicleDialog';
 import { SMSStatusSheet } from '@/components/SMSStatusSheet';
 import { SubscriptionCard } from '@/components/SubscriptionCard';
-import { Car, Send, Crown, Globe, MessageSquare, Moon, Sun } from 'lucide-react';
+import { VillaManager } from '@/components/VillaManager';
+import { AutomationSettings } from '@/components/AutomationSettings';
+import { Car, Send, Crown, Globe, MessageSquare, Moon, Sun, Settings, Home, Clock } from 'lucide-react';
 import { LocalStorage } from '@/utils/storage';
 import { getTranslations, isRTL } from '@/utils/i18n';
 import { useToast } from '@/hooks/use-toast';
-import type { Vehicle, AppSettings, SubscriptionStatus } from '@/types';
+import type { Vehicle, AppSettings, SubscriptionStatus, Villa, AutomationSchedule } from '@/types';
 
 export function ParkingSMSApp() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [villas, setVillas] = useState<Villa[]>([]);
+  const [schedules, setSchedules] = useState<AutomationSchedule[]>([]);
   const [settings, setSettings] = useState<AppSettings>({
     language: 'en',
-    governmentNumber: '3009',
-    notificationsEnabled: true
+    defaultSmsNumber: '3009',
+    notificationsEnabled: true,
+    automationEnabled: false
   });
   const [subscription, setSubscription] = useState<SubscriptionStatus>({
     isActive: true,
@@ -48,13 +53,17 @@ export function ParkingSMSApp() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [vehiclesData, settingsData, subscriptionData] = await Promise.all([
+        const [vehiclesData, villasData, schedulesData, settingsData, subscriptionData] = await Promise.all([
           LocalStorage.getVehicles(),
+          LocalStorage.getVillas(),
+          LocalStorage.getAutomationSchedules(),
           LocalStorage.getSettings(),
           LocalStorage.getSubscriptionStatus()
         ]);
         
         setVehicles(vehiclesData);
+        setVillas(villasData);
+        setSchedules(schedulesData);
         setSettings(settingsData);
         setSubscription(subscriptionData);
       } catch (error) {
@@ -67,10 +76,15 @@ export function ParkingSMSApp() {
     loadData();
   }, []);
 
-  const handleAddVehicle = async (vehicleData: Omit<Vehicle, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const handleAddVehicle = async (vehicleData: Omit<Vehicle, 'id' | 'createdAt' | 'updatedAt' | 'serialNumber'>) => {
+    // Generate serial number based on existing vehicles in the same villa
+    const villaVehicles = vehicles.filter(v => v.villaId === vehicleData.villaId);
+    const serialNumber = villaVehicles.length + 1;
+    
     const newVehicle: Vehicle = {
       ...vehicleData,
       id: Date.now().toString(),
+      serialNumber,
       createdAt: new Date(),
       updatedAt: new Date()
     };
@@ -104,6 +118,88 @@ export function ParkingSMSApp() {
     toast({
       title: "Vehicle Deleted",
       description: "Vehicle has been removed successfully."
+    });
+  };
+
+  // Villa management
+  const handleAddVilla = async (villaData: Omit<Villa, 'id' | 'createdAt' | 'updatedAt'>) => {
+    const newVilla: Villa = {
+      ...villaData,
+      id: Date.now().toString(),
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    
+    const updatedVillas = [...villas, newVilla];
+    setVillas(updatedVillas);
+    await LocalStorage.saveVillas(updatedVillas);
+    
+    toast({
+      title: "Villa Added",
+      description: `${newVilla.name} has been added successfully.`
+    });
+  };
+
+  const handleUpdateVilla = async (id: string, updates: Partial<Villa>) => {
+    const updatedVillas = villas.map(v => 
+      v.id === id ? { ...v, ...updates, updatedAt: new Date() } : v
+    );
+    
+    setVillas(updatedVillas);
+    await LocalStorage.saveVillas(updatedVillas);
+  };
+
+  const handleDeleteVilla = async (id: string) => {
+    // Don't allow deleting default villa or villas with vehicles
+    if (id === 'default' || vehicles.some(v => v.villaId === id)) {
+      toast({
+        title: "Cannot Delete Villa",
+        description: "Villa has vehicles or is the default villa.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const updatedVillas = villas.filter(v => v.id !== id);
+    setVillas(updatedVillas);
+    await LocalStorage.saveVillas(updatedVillas);
+    
+    toast({
+      title: "Villa Deleted",
+      description: "Villa has been removed successfully."
+    });
+  };
+
+  // Automation management
+  const handleUpdateSchedule = async (schedule: AutomationSchedule) => {
+    const updatedSchedules = schedules.map(s => 
+      s.id === schedule.id ? schedule : s
+    );
+    
+    setSchedules(updatedSchedules);
+    await LocalStorage.saveAutomationSchedules(updatedSchedules);
+    
+    toast({
+      title: "Schedule Updated",
+      description: "Automation schedule has been saved."
+    });
+  };
+
+  const handleCreateSchedule = async (scheduleData: Omit<AutomationSchedule, 'id' | 'createdAt' | 'updatedAt'>) => {
+    const newSchedule: AutomationSchedule = {
+      ...scheduleData,
+      id: Date.now().toString(),
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    
+    const updatedSchedules = [...schedules, newSchedule];
+    setSchedules(updatedSchedules);
+    await LocalStorage.saveAutomationSchedules(updatedSchedules);
+    
+    toast({
+      title: "Schedule Created",
+      description: "Automation schedule has been created."
     });
   };
 
@@ -195,14 +291,22 @@ export function ParkingSMSApp() {
       {/* Main Content */}
       <main className="pb-20 pt-4">
         <Tabs defaultValue="vehicles" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 bg-muted">
+          <TabsList className="grid w-full grid-cols-5 bg-muted">
             <TabsTrigger value="vehicles" className="flex items-center gap-2">
               <Car className="h-4 w-4" />
               {translations.vehicles}
             </TabsTrigger>
+            <TabsTrigger value="villas" className="flex items-center gap-2">
+              <Home className="h-4 w-4" />
+              {translations.villas}
+            </TabsTrigger>
             <TabsTrigger value="sms" className="flex items-center gap-2">
               <MessageSquare className="h-4 w-4" />
               SMS
+            </TabsTrigger>
+            <TabsTrigger value="automation" className="flex items-center gap-2">
+              <Clock className="h-4 w-4" />
+              {translations.automation}
             </TabsTrigger>
             <TabsTrigger value="subscription" className="flex items-center gap-2">
               <Crown className="h-4 w-4" />
@@ -219,7 +323,7 @@ export function ParkingSMSApp() {
               </Badge>
             </div>
             
-            <AddVehicleDialog onAdd={handleAddVehicle} isRTL={rtl} />
+            <AddVehicleDialog onAdd={handleAddVehicle} villas={villas} isRTL={rtl} />
             
             {vehicles.length === 0 ? (
               <Card className="card-mobile text-center py-8">
@@ -230,18 +334,56 @@ export function ParkingSMSApp() {
                 </p>
               </Card>
             ) : (
-              <div className="space-y-3">
-                {vehicles.map(vehicle => (
-                  <VehicleCard
-                    key={vehicle.id}
-                    vehicle={vehicle}
-                    onUpdate={handleUpdateVehicle}
-                    onDelete={handleDeleteVehicle}
-                    isRTL={rtl}
-                  />
-                ))}
+              <div className="space-y-4">
+                {/* Group vehicles by villa */}
+                {villas.map(villa => {
+                  const villaVehicles = vehicles.filter(v => v.villaId === villa.id);
+                  if (villaVehicles.length === 0) return null;
+                  
+                  return (
+                    <div key={villa.id} className="space-y-3">
+                      <div className={`flex items-center gap-3 ${rtl ? 'flex-row-reverse' : ''}`}>
+                        <Home className="h-5 w-5 text-primary" />
+                        <h3 className="text-lg font-semibold text-foreground">{villa.name}</h3>
+                        <Badge variant="outline">{villaVehicles.length}</Badge>
+                        <div className="text-sm text-muted-foreground">
+                          SMS: {villa.defaultSmsNumber}
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-3 pl-8">
+                        {villaVehicles
+                          .sort((a, b) => a.serialNumber - b.serialNumber)
+                          .map((vehicle, index) => (
+                          <div key={vehicle.id} className="relative">
+                            <div className="absolute -left-6 top-4 w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary">
+                              {vehicle.serialNumber}
+                            </div>
+                            <VehicleCard
+                              vehicle={vehicle}
+                              onUpdate={handleUpdateVehicle}
+                              onDelete={handleDeleteVehicle}
+                              isRTL={rtl}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
+          </TabsContent>
+
+          {/* Villas Tab */}
+          <TabsContent value="villas" className="space-y-4">
+            <VillaManager
+              villas={villas}
+              onAdd={handleAddVilla}
+              onUpdate={handleUpdateVilla}
+              onDelete={handleDeleteVilla}
+              isRTL={rtl}
+            />
           </TabsContent>
 
           {/* SMS Tab */}
@@ -287,6 +429,17 @@ export function ParkingSMSApp() {
                 </div>
               </Card>
             )}
+          </TabsContent>
+
+          {/* Automation Tab */}
+          <TabsContent value="automation" className="space-y-4">
+            <AutomationSettings
+              villas={villas}
+              schedules={schedules}
+              onUpdateSchedule={handleUpdateSchedule}
+              onCreateSchedule={handleCreateSchedule}
+              isRTL={rtl}
+            />
           </TabsContent>
 
           {/* Subscription Tab */}

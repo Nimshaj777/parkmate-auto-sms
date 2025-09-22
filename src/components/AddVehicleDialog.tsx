@@ -3,42 +3,60 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Car } from 'lucide-react';
-import type { Vehicle } from '@/types';
+import type { Vehicle, Villa } from '@/types';
 
 interface AddVehicleDialogProps {
-  onAdd: (vehicle: Omit<Vehicle, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  onAdd: (vehicle: Omit<Vehicle, 'id' | 'createdAt' | 'updatedAt' | 'serialNumber'>) => void;
+  villas: Villa[];
   isRTL: boolean;
 }
 
-export function AddVehicleDialog({ onAdd, isRTL }: AddVehicleDialogProps) {
+export function AddVehicleDialog({ onAdd, villas, isRTL }: AddVehicleDialogProps) {
   const [open, setOpen] = useState(false);
   const [plateNumber, setPlateNumber] = useState('');
+  const [roomName, setRoomName] = useState('');
   const [smsMessage, setSmsMessage] = useState('');
+  const [selectedVilla, setSelectedVilla] = useState(villas[0]?.id || '');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!plateNumber.trim() || !smsMessage.trim()) return;
+    if (!plateNumber.trim() || !smsMessage.trim() || !roomName.trim() || !selectedVilla) return;
     
     onAdd({
       plateNumber: plateNumber.trim(),
+      roomName: roomName.trim(),
       smsMessage: smsMessage.trim(),
-      status: 'pending'
+      status: 'pending',
+      villaId: selectedVilla
     });
     
     // Reset form
     setPlateNumber('');
+    setRoomName('');
     setSmsMessage('');
+    setSelectedVilla(villas[0]?.id || '');
     setOpen(false);
   };
 
   // Auto-generate SMS message when plate number changes
   const handlePlateChange = (value: string) => {
     setPlateNumber(value);
-    // Auto-format common UAE patterns
-    if (value && !smsMessage) {
+    // Auto-format common UAE patterns with room info
+    if (value && !smsMessage && roomName) {
+      setSmsMessage(`${value} E21 6 ${roomName}`);
+    } else if (value && !smsMessage) {
       setSmsMessage(`${value} E21 6`);
+    }
+  };
+
+  // Update SMS when room changes
+  const handleRoomChange = (value: string) => {
+    setRoomName(value);
+    if (plateNumber && value && !smsMessage) {
+      setSmsMessage(`${plateNumber} E21 6 ${value}`);
     }
   };
 
@@ -61,6 +79,24 @@ export function AddVehicleDialog({ onAdd, isRTL }: AddVehicleDialogProps) {
         
         <form onSubmit={handleSubmit} className="space-y-6 pt-4">
           <div className="space-y-2">
+            <Label htmlFor="villa" className="text-sm font-medium">
+              Villa / الفيلا
+            </Label>
+            <Select value={selectedVilla} onValueChange={setSelectedVilla}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select villa" />
+              </SelectTrigger>
+              <SelectContent>
+                {villas.map(villa => (
+                  <SelectItem key={villa.id} value={villa.id}>
+                    {villa.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="plateNumber" className="text-sm font-medium">
               Plate Number / رقم اللوحة
             </Label>
@@ -68,13 +104,30 @@ export function AddVehicleDialog({ onAdd, isRTL }: AddVehicleDialogProps) {
               id="plateNumber"
               value={plateNumber}
               onChange={(e) => handlePlateChange(e.target.value.toUpperCase())}
-              placeholder="AUH14 47402"
+              placeholder="12345"
               className="text-center font-mono text-lg h-12"
               dir="ltr"
               required
             />
             <p className="text-xs text-muted-foreground">
               Enter your vehicle's plate number / أدخل رقم لوحة مركبتك
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="roomName" className="text-sm font-medium">
+              Room/Flat Name / اسم الغرفة/الشقة
+            </Label>
+            <Input
+              id="roomName"
+              value={roomName}
+              onChange={(e) => handleRoomChange(e.target.value)}
+              placeholder="A101, Villa1-Room2, etc."
+              className="h-12"
+              required
+            />
+            <p className="text-xs text-muted-foreground">
+              Enter room/flat identifier / أدخل معرف الغرفة/الشقة
             </p>
           </div>
           
@@ -86,13 +139,13 @@ export function AddVehicleDialog({ onAdd, isRTL }: AddVehicleDialogProps) {
               id="smsMessage"
               value={smsMessage}
               onChange={(e) => setSmsMessage(e.target.value)}
-              placeholder="AUH14 47402 E21 6"
+              placeholder="12345 E21 6 A101"
               className="font-mono h-12"
               dir="ltr"
               required
             />
             <p className="text-xs text-muted-foreground">
-              Message format for government number 3009 / تنسيق الرسالة للرقم الحكومي 3009
+              Message format for government number / تنسيق الرسالة للرقم الحكومي
             </p>
           </div>
           

@@ -1,5 +1,5 @@
 import { Storage } from '@capacitor/storage';
-import type { Vehicle, AppSettings, SubscriptionStatus } from '@/types';
+import type { Vehicle, AppSettings, SubscriptionStatus, Villa, AutomationSchedule } from '@/types';
 
 export class LocalStorage {
   private static readonly VEHICLES_KEY = 'parking_vehicles';
@@ -53,15 +53,17 @@ export class LocalStorage {
       const { value } = await Storage.get({ key: this.SETTINGS_KEY });
       return value ? JSON.parse(value) : {
         language: 'en',
-        governmentNumber: '3009',
-        notificationsEnabled: true
+        defaultSmsNumber: '3009',
+        notificationsEnabled: true,
+        automationEnabled: false
       };
     } catch (error) {
       console.error('Error getting settings:', error);
       return {
         language: 'en',
-        governmentNumber: '3009',
-        notificationsEnabled: true
+        defaultSmsNumber: '3009',
+        notificationsEnabled: true,
+        automationEnabled: false
       };
     }
   }
@@ -92,6 +94,62 @@ export class LocalStorage {
         type: 'trial',
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
       };
+    }
+  }
+
+  // Villa management
+  static async getVillas(): Promise<Villa[]> {
+    try {
+      const { value } = await Storage.get({ key: 'parking_villas' });
+      return value ? JSON.parse(value) : [{
+        id: 'default',
+        name: 'Default Villa',
+        defaultSmsNumber: '3009',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }];
+    } catch (error) {
+      console.error('Error getting villas:', error);
+      return [{
+        id: 'default',
+        name: 'Default Villa',
+        defaultSmsNumber: '3009',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }];
+    }
+  }
+
+  static async saveVillas(villas: Villa[]): Promise<void> {
+    try {
+      await Storage.set({
+        key: 'parking_villas',
+        value: JSON.stringify(villas)
+      });
+    } catch (error) {
+      console.error('Error saving villas:', error);
+    }
+  }
+
+  // Automation schedules
+  static async getAutomationSchedules(): Promise<AutomationSchedule[]> {
+    try {
+      const { value } = await Storage.get({ key: 'automation_schedules' });
+      return value ? JSON.parse(value) : [];
+    } catch (error) {
+      console.error('Error getting schedules:', error);
+      return [];
+    }
+  }
+
+  static async saveAutomationSchedules(schedules: AutomationSchedule[]): Promise<void> {
+    try {
+      await Storage.set({
+        key: 'automation_schedules',
+        value: JSON.stringify(schedules)
+      });
+    } catch (error) {
+      console.error('Error saving schedules:', error);
     }
   }
 
