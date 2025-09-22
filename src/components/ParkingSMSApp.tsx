@@ -7,7 +7,7 @@ import { VehicleCard } from '@/components/VehicleCard';
 import { AddVehicleDialog } from '@/components/AddVehicleDialog';
 import { SMSStatusSheet } from '@/components/SMSStatusSheet';
 import { SubscriptionCard } from '@/components/SubscriptionCard';
-import { Car, Send, Settings, Crown, Globe, MessageSquare } from 'lucide-react';
+import { Car, Send, Crown, Globe, MessageSquare, Moon, Sun } from 'lucide-react';
 import { LocalStorage } from '@/utils/storage';
 import { getTranslations, isRTL } from '@/utils/i18n';
 import { useToast } from '@/hooks/use-toast';
@@ -27,10 +27,22 @@ export function ParkingSMSApp() {
   });
   const [smsSheetOpen, setSmsSheetOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isDarkMode, setIsDarkMode] = useState(false);
 
   const { toast } = useToast();
   const translations = getTranslations(settings.language);
   const rtl = isRTL(settings.language);
+
+  // Toggle theme
+  const toggleTheme = () => {
+    const newMode = !isDarkMode;
+    setIsDarkMode(newMode);
+    if (newMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  };
 
   // Load data on mount
   useEffect(() => {
@@ -136,18 +148,18 @@ export function ParkingSMSApp() {
 
   return (
     <div 
-      className={`mobile-container min-h-screen bg-background ${rtl ? 'text-right' : 'text-left'}`}
+      className={`mobile-container min-h-screen bg-background transition-colors ${rtl ? 'text-right' : 'text-left'}`}
       dir={rtl ? 'rtl' : 'ltr'}
     >
       {/* Header */}
       <header className="sticky top-0 bg-background/95 backdrop-blur-sm border-b border-border z-40 py-4">
         <div className={`flex items-center justify-between ${rtl ? 'flex-row-reverse' : ''}`}>
           <div className={`flex items-center gap-3 ${rtl ? 'flex-row-reverse' : ''}`}>
-            <div className="h-10 w-10 rounded-xl bg-gradient-primary flex items-center justify-center">
-              <Car className="h-5 w-5 text-white" />
+            <div className="h-10 w-10 rounded-lg bg-primary flex items-center justify-center">
+              <Car className="h-5 w-5 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-xl font-bold">{translations.appName}</h1>
+              <h1 className="text-xl font-bold text-foreground">{translations.appName}</h1>
               <p className="text-sm text-muted-foreground">
                 {vehicles.length} vehicles / {vehicles.length} مركبة
               </p>
@@ -155,6 +167,14 @@ export function ParkingSMSApp() {
           </div>
           
           <div className={`flex items-center gap-2 ${rtl ? 'flex-row-reverse' : ''}`}>
+            <Button
+              onClick={toggleTheme}
+              variant="outline"
+              size="icon"
+              className="h-10 w-10"
+            >
+              {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </Button>
             <Button
               onClick={handleLanguageSwitch}
               variant="outline"
@@ -175,7 +195,7 @@ export function ParkingSMSApp() {
       {/* Main Content */}
       <main className="pb-20 pt-4">
         <Tabs defaultValue="vehicles" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-3 bg-muted">
             <TabsTrigger value="vehicles" className="flex items-center gap-2">
               <Car className="h-4 w-4" />
               {translations.vehicles}
@@ -193,7 +213,7 @@ export function ParkingSMSApp() {
           {/* Vehicles Tab */}
           <TabsContent value="vehicles" className="space-y-4">
             <div className={`flex items-center justify-between ${rtl ? 'flex-row-reverse' : ''}`}>
-              <h2 className="text-lg font-semibold">{translations.vehicles}</h2>
+              <h2 className="text-lg font-semibold text-foreground">{translations.vehicles}</h2>
               <Badge variant="secondary">
                 {vehicles.length} vehicles
               </Badge>
@@ -204,7 +224,7 @@ export function ParkingSMSApp() {
             {vehicles.length === 0 ? (
               <Card className="card-mobile text-center py-8">
                 <Car className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-                <h3 className="font-semibold mb-2">No vehicles added yet</h3>
+                <h3 className="font-semibold mb-2 text-foreground">No vehicles added yet</h3>
                 <p className="text-sm text-muted-foreground mb-4">
                   Add your first vehicle to start sending parking SMS messages
                 </p>
@@ -227,7 +247,7 @@ export function ParkingSMSApp() {
           {/* SMS Tab */}
           <TabsContent value="sms" className="space-y-4">
             <div className={`flex items-center justify-between ${rtl ? 'flex-row-reverse' : ''}`}>
-              <h2 className="text-lg font-semibold">SMS Status</h2>
+              <h2 className="text-lg font-semibold text-foreground">SMS Status</h2>
               <Badge variant="secondary">
                 {pendingCount} pending
               </Badge>
@@ -247,8 +267,8 @@ export function ParkingSMSApp() {
             
             <Button
               onClick={() => setSmsSheetOpen(true)}
-              variant="mobile"
-              size="mobile"
+              variant="default"
+              size="lg"
               className="w-full"
               disabled={!canUsePremiumFeatures || vehicles.length === 0}
             >
@@ -260,7 +280,7 @@ export function ParkingSMSApp() {
               <Card className="card-mobile border-warning/20 bg-warning/5">
                 <div className="text-center space-y-2">
                   <Crown className="h-8 w-8 text-warning mx-auto" />
-                  <h3 className="font-semibold">{translations.subscriptionExpired}</h3>
+                  <h3 className="font-semibold text-foreground">{translations.subscriptionExpired}</h3>
                   <p className="text-sm text-muted-foreground">
                     Activate your subscription to send SMS messages
                   </p>
@@ -272,7 +292,7 @@ export function ParkingSMSApp() {
           {/* Subscription Tab */}
           <TabsContent value="subscription" className="space-y-4">
             <div className={`flex items-center justify-between ${rtl ? 'flex-row-reverse' : ''}`}>
-              <h2 className="text-lg font-semibold">{translations.subscription}</h2>
+              <h2 className="text-lg font-semibold text-foreground">{translations.subscription}</h2>
             </div>
             
             <SubscriptionCard

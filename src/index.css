@@ -6,82 +6,99 @@
 
 @layer base {
   :root {
-    /* Modern Mobile Color Palette */
-    --background: 248 250 252;
-    --foreground: 15 23 42;
-    --card: 255 255 255;
-    --card-foreground: 15 23 42;
-    --popover: 255 255 255;
-    --popover-foreground: 15 23 42;
+    /* Clean Black & White Light Theme */
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 3.9%;
     
-    /* Premium Blue Theme for Parking App */
-    --primary: 217 91% 60%;
-    --primary-foreground: 255 255 255;
-    --primary-light: 217 91% 70%;
-    --primary-dark: 217 91% 45%;
+    /* Primary - Clean Black */
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 98%;
+    --primary-light: 0 0% 20%;
+    --primary-dark: 0 0% 3%;
     
-    /* Success Green for Verified SMS */
+    /* Success Green for SMS Status */
     --success: 142 76% 36%;
-    --success-foreground: 255 255 255;
+    --success-foreground: 0 0% 98%;
     --success-light: 142 69% 58%;
     
     /* Warning Orange for Pending */
     --warning: 38 92% 50%;
-    --warning-foreground: 255 255 255;
+    --warning-foreground: 0 0% 98%;
     --warning-light: 38 92% 65%;
     
     /* Error Red for Failed SMS */
     --error: 0 84% 60%;
-    --error-foreground: 255 255 255;
+    --error-foreground: 0 0% 98%;
     --error-light: 0 84% 75%;
     
-    --secondary: 226 71% 96%;
-    --secondary-foreground: 15 23 42;
-    --muted: 226 71% 96%;
-    --muted-foreground: 100 116 139;
-    --accent: 226 71% 96%;
-    --accent-foreground: 15 23 42;
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 0 0% 9%;
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
+    --accent: 0 0% 96.1%;
+    --accent-foreground: 0 0% 9%;
     --destructive: 0 84% 60%;
-    --destructive-foreground: 255 255 255;
-    --border: 226 71% 90%;
-    --input: 226 71% 90%;
-    --ring: 217 91% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 0 0% 3.9%;
     
     /* Mobile-optimized radius */
-    --radius: 0.75rem;
+    --radius: 0.5rem;
     
-    /* Mobile App Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(217 91% 60%), hsl(217 91% 45%));
+    /* Clean Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(0 0% 9%), hsl(0 0% 3%));
     --gradient-success: linear-gradient(135deg, hsl(142 76% 36%), hsl(142 76% 28%));
-    --gradient-card: linear-gradient(145deg, hsl(255 255 255), hsl(226 71% 98%));
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(0 0% 98%));
     
-    /* Mobile Shadows */
-    --shadow-card: 0 4px 6px -1px hsl(217 91% 60% / 0.1), 0 2px 4px -2px hsl(217 91% 60% / 0.1);
-    --shadow-button: 0 2px 4px hsl(217 91% 60% / 0.2);
-    --shadow-success: 0 2px 8px hsl(142 76% 36% / 0.3);
-    --shadow-error: 0 2px 8px hsl(0 84% 60% / 0.3);
+    /* Subtle Shadows */
+    --shadow-card: 0 1px 3px 0 hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
+    --shadow-button: 0 1px 2px 0 hsl(0 0% 0% / 0.05);
+    --shadow-success: 0 2px 8px hsl(142 76% 36% / 0.25);
+    --shadow-error: 0 2px 8px hsl(0 84% 60% / 0.25);
   }
 
   .dark {
-    --background: 15 23 42;
-    --foreground: 248 250 252;
-    --card: 30 41 59;
-    --card-foreground: 248 250 252;
-    --popover: 30 41 59;
-    --popover-foreground: 248 250 252;
-    --primary: 217 91% 65%;
-    --primary-foreground: 15 23 42;
-    --secondary: 51 65 85;
-    --secondary-foreground: 248 250 252;
-    --muted: 51 65 85;
-    --muted-foreground: 148 163 184;
-    --accent: 51 65 85;
-    --accent-foreground: 248 250 252;
-    --destructive: 0 84% 65%;
-    --destructive-foreground: 248 250 252;
-    --border: 51 65 85;
-    --input: 51 65 85;
-    --ring: 217 91% 65%;
+    /* Clean Black & White Dark Theme */
+    --background: 0 0% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    
+    /* Primary - Clean White on Dark */
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 9%;
+    --primary-light: 0 0% 80%;
+    --primary-dark: 0 0% 100%;
+    
+    --secondary: 0 0% 14.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
+    --accent: 0 0% 14.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 14.9%;
+    --input: 0 0% 14.9%;
+    --ring: 0 0% 83.1%;
+    
+    /* Dark Theme Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(0 0% 98%), hsl(0 0% 80%));
+    --gradient-success: linear-gradient(135deg, hsl(142 76% 36%), hsl(142 76% 28%));
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 3.9%), hsl(0 0% 6%));
+    
+    /* Dark Theme Shadows */
+    --shadow-card: 0 4px 6px -1px hsl(0 0% 0% / 0.3), 0 2px 4px -2px hsl(0 0% 0% / 0.3);
+    --shadow-button: 0 2px 4px hsl(0 0% 0% / 0.3);
+    --shadow-success: 0 2px 8px hsl(142 76% 36% / 0.4);
+    --shadow-error: 0 2px 8px hsl(0 84% 60% / 0.4);
   }
 }
 
@@ -156,24 +173,8 @@
     @apply bg-error/10 text-error border-error/20;
   }
   
-  .gradient-primary {
-    background: var(--gradient-primary);
-  }
-  
-  .gradient-success {
-    background: var(--gradient-success);
-  }
-  
   .card-mobile {
-    @apply bg-card rounded-xl border shadow-sm p-4;
+    @apply bg-card rounded-lg border p-4;
     box-shadow: var(--shadow-card);
-  }
-  
-  .btn-mobile {
-    @apply inline-flex items-center justify-center rounded-lg text-sm font-medium transition-colors;
-    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring;
-    @apply disabled:pointer-events-none disabled:opacity-50;
-    min-height: 44px;
-    box-shadow: var(--shadow-button);
   }
 }
