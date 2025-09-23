@@ -310,7 +310,7 @@ export function ParkingSMSApp() {
             </TabsTrigger>
             <TabsTrigger value="subscription" className="flex items-center gap-2">
               <Crown className="h-4 w-4" />
-              {translations.subscription}
+              {translations.activate}
             </TabsTrigger>
           </TabsList>
 
@@ -386,50 +386,87 @@ export function ParkingSMSApp() {
             />
           </TabsContent>
 
-          {/* SMS Tab */}
-          <TabsContent value="sms" className="space-y-4">
-            <div className={`flex items-center justify-between ${rtl ? 'flex-row-reverse' : ''}`}>
-              <h2 className="text-lg font-semibold text-foreground">SMS Status</h2>
-              <Badge variant="secondary">
-                {pendingCount} pending
-              </Badge>
-            </div>
-            
-            {/* SMS Summary Cards */}
-            <div className="grid grid-cols-2 gap-4">
-              <Card className="card-mobile text-center">
-                <div className="text-2xl font-bold text-success">{sentCount}</div>
-                <div className="text-sm text-muted-foreground">Sent / مرسل</div>
-              </Card>
-              <Card className="card-mobile text-center">
-                <div className="text-2xl font-bold text-warning">{pendingCount}</div>
-                <div className="text-sm text-muted-foreground">Pending / في الانتظار</div>
-              </Card>
-            </div>
-            
-            <Button
-              onClick={() => setSmsSheetOpen(true)}
-              variant="default"
-              size="lg"
-              className="w-full"
-              disabled={!canUsePremiumFeatures || vehicles.length === 0}
-            >
-              <Send className="h-5 w-5" />
-              {translations.sendAll} ({pendingCount})
-            </Button>
-            
-            {!canUsePremiumFeatures && (
-              <Card className="card-mobile border-warning/20 bg-warning/5">
-                <div className="text-center space-y-2">
-                  <Crown className="h-8 w-8 text-warning mx-auto" />
-                  <h3 className="font-semibold text-foreground">{translations.subscriptionExpired}</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Activate your subscription to send SMS messages
-                  </p>
+            {/* SMS Tab */}
+            <TabsContent value="sms" className="space-y-4">
+              <div className={`flex items-center justify-between ${rtl ? 'flex-row-reverse' : ''}`}>
+                <h2 className="text-lg font-semibold text-foreground">SMS Status</h2>
+                <Badge variant="secondary">
+                  {pendingCount} pending
+                </Badge>
+              </div>
+              
+              {/* SMS Summary Cards */}
+              <div className="grid grid-cols-2 gap-4">
+                <Card className="card-mobile text-center">
+                  <div className="text-2xl font-bold text-success">{sentCount}</div>
+                  <div className="text-sm text-muted-foreground">Sent / مرسل</div>
+                </Card>
+                <Card className="card-mobile text-center">
+                  <div className="text-2xl font-bold text-warning">{pendingCount}</div>
+                  <div className="text-sm text-muted-foreground">Pending / في الانتظار</div>
+                </Card>
+              </div>
+              
+              {/* 7-Day SMS History */}
+              <Card className="card-mobile">
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-foreground">{translations.smsHistory} - {translations.last7Days}</h3>
+                  <div className="space-y-2">
+                    {[...Array(7)].map((_, i) => {
+                      const date = new Date();
+                      date.setDate(date.getDate() - i);
+                      const dateStr = date.toLocaleDateString(settings.language === 'ar' ? 'ar-AE' : 'en-US', {
+                        weekday: 'short',
+                        month: 'short',
+                        day: 'numeric'
+                      });
+                      // Mock data for demonstration - in real app, this would come from storage
+                      const successful = Math.floor(Math.random() * 10);
+                      const errors = Math.floor(Math.random() * 3);
+                      
+                      return (
+                        <div key={i} className={`flex items-center justify-between p-2 rounded-lg bg-muted/30 ${rtl ? 'flex-row-reverse' : ''}`}>
+                          <span className="text-sm font-medium text-foreground">{dateStr}</span>
+                          <div className={`flex items-center gap-4 ${rtl ? 'flex-row-reverse' : ''}`}>
+                            <div className="text-center">
+                              <div className="text-sm font-semibold text-success">{successful}</div>
+                              <div className="text-xs text-muted-foreground">{translations.successful}</div>
+                            </div>
+                            <div className="text-center">
+                              <div className="text-sm font-semibold text-destructive">{errors}</div>
+                              <div className="text-xs text-muted-foreground">{translations.errors}</div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </Card>
-            )}
-          </TabsContent>
+              
+              <Button
+                onClick={() => setSmsSheetOpen(true)}
+                variant="default"
+                size="lg"
+                className="w-full"
+                disabled={!canUsePremiumFeatures || vehicles.length === 0}
+              >
+                <Send className="h-5 w-5" />
+                {translations.sendAll} ({pendingCount})
+              </Button>
+              
+              {!canUsePremiumFeatures && (
+                <Card className="card-mobile border-warning/20 bg-warning/5">
+                  <div className="text-center space-y-2">
+                    <Crown className="h-8 w-8 text-warning mx-auto" />
+                    <h3 className="font-semibold text-foreground">{translations.subscriptionExpired}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Activate your subscription to send SMS messages
+                    </p>
+                  </div>
+                </Card>
+              )}
+            </TabsContent>
 
           {/* Automation Tab */}
           <TabsContent value="automation" className="space-y-4">

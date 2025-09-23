@@ -24,11 +24,16 @@ export const translations: Record<'en' | 'ar', LanguageStrings> = {
     villa: 'Villa',
     villas: 'Villas',
     addVilla: 'Add Villa',
-    automation: 'Automation',
+    automation: 'Auto',
     schedule: 'Schedule',
     notifications: 'Notifications',
     defaultNumber: 'Default Number',
-    serialNumber: 'S/N'
+    serialNumber: 'S/N',
+    smsHistory: 'SMS History',
+    last7Days: 'Last 7 Days',
+    date: 'Date',
+    successful: 'Successful',
+    errors: 'Errors'
   },
   ar: {
     appName: 'رسائل الموقف',
@@ -53,11 +58,16 @@ export const translations: Record<'en' | 'ar', LanguageStrings> = {
     villa: 'الفيلا',
     villas: 'الفيلات',
     addVilla: 'إضافة فيلا',
-    automation: 'الأتمتة',
+    automation: 'آلي',
     schedule: 'الجدولة',
     notifications: 'التنبيهات',
     defaultNumber: 'الرقم الافتراضي',
-    serialNumber: 'الرقم التسلسلي'
+    serialNumber: 'الرقم التسلسلي',
+    smsHistory: 'تاريخ الرسائل',
+    last7Days: 'آخر 7 أيام',
+    date: 'التاريخ',
+    successful: 'ناجح',
+    errors: 'أخطاء'
   }
 };
 

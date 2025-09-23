@@ -95,4 +95,15 @@ export interface LanguageStrings {
   notifications: string;
   defaultNumber: string;
   serialNumber: string;
+  smsHistory: string;
+  last7Days: string;
+  date: string;
+  successful: string;
+  errors: string;
+}
+
+export interface SMSHistoryEntry {
+  date: string; // Format: "YYYY-MM-DD"
+  successful: number;
+  errors: number;
 }
