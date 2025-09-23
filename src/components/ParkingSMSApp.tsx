@@ -395,6 +395,29 @@ export function ParkingSMSApp() {
                 </Badge>
               </div>
               
+              <Button
+                onClick={() => setSmsSheetOpen(true)}
+                variant="default"
+                size="lg"
+                className="w-full"
+                disabled={!canUsePremiumFeatures || vehicles.length === 0}
+              >
+                <Send className="h-5 w-5" />
+                {translations.sendAll} ({pendingCount})
+              </Button>
+              
+              {!canUsePremiumFeatures && (
+                <Card className="card-mobile border-warning/20 bg-warning/5">
+                  <div className="text-center space-y-2">
+                    <Crown className="h-8 w-8 text-warning mx-auto" />
+                    <h3 className="font-semibold text-foreground">{translations.subscriptionExpired}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Activate your subscription to send SMS messages
+                    </p>
+                  </div>
+                </Card>
+              )}
+              
               {/* SMS Summary Cards */}
               <div className="grid grid-cols-2 gap-4">
                 <Card className="card-mobile text-center">
@@ -443,29 +466,6 @@ export function ParkingSMSApp() {
                   </div>
                 </div>
               </Card>
-              
-              <Button
-                onClick={() => setSmsSheetOpen(true)}
-                variant="default"
-                size="lg"
-                className="w-full"
-                disabled={!canUsePremiumFeatures || vehicles.length === 0}
-              >
-                <Send className="h-5 w-5" />
-                {translations.sendAll} ({pendingCount})
-              </Button>
-              
-              {!canUsePremiumFeatures && (
-                <Card className="card-mobile border-warning/20 bg-warning/5">
-                  <div className="text-center space-y-2">
-                    <Crown className="h-8 w-8 text-warning mx-auto" />
-                    <h3 className="font-semibold text-foreground">{translations.subscriptionExpired}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Activate your subscription to send SMS messages
-                    </p>
-                  </div>
-                </Card>
-              )}
             </TabsContent>
 
           {/* Automation Tab */}
