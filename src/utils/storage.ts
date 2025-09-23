@@ -83,16 +83,16 @@ export class LocalStorage {
     try {
       const { value } = await Storage.get({ key: this.SUBSCRIPTION_KEY });
       return value ? JSON.parse(value) : {
-        isActive: true, // 7-day trial
+        isActive: true, // 3-day trial
         type: 'trial',
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+        expiresAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
       };
     } catch (error) {
       console.error('Error getting subscription:', error);
       return {
         isActive: true,
         type: 'trial',
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+        expiresAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
       };
     }
   }
@@ -161,6 +161,72 @@ export class LocalStorage {
       });
     } catch (error) {
       console.error('Error saving subscription:', error);
+    }
+  }
+
+  // Activation codes management
+  static async getActivationCodes(): Promise<import('./subscription').ActivationCode[]> {
+    try {
+      const { value } = await Storage.get({ key: 'activation_codes' });
+      return value ? JSON.parse(value) : [];
+    } catch (error) {
+      console.error('Error getting activation codes:', error);
+      return [];
+    }
+  }
+
+  static async saveActivationCodes(codes: import('./subscription').ActivationCode[]): Promise<void> {
+    try {
+      await Storage.set({
+        key: 'activation_codes',
+        value: JSON.stringify(codes)
+      });
+    } catch (error) {
+      console.error('Error saving activation codes:', error);
+    }
+  }
+
+  // Trial devices management
+  static async getTrialDevices(): Promise<import('./subscription').DeviceInfo[]> {
+    try {
+      const { value } = await Storage.get({ key: 'trial_devices' });
+      return value ? JSON.parse(value) : [];
+    } catch (error) {
+      console.error('Error getting trial devices:', error);
+      return [];
+    }
+  }
+
+  static async saveTrialDevices(devices: import('./subscription').DeviceInfo[]): Promise<void> {
+    try {
+      await Storage.set({
+        key: 'trial_devices',
+        value: JSON.stringify(devices)
+      });
+    } catch (error) {
+      console.error('Error saving trial devices:', error);
+    }
+  }
+
+  // Trial IPs management (web only)
+  static async getTrialIPs(): Promise<string[]> {
+    try {
+      const { value } = await Storage.get({ key: 'trial_ips' });
+      return value ? JSON.parse(value) : [];
+    } catch (error) {
+      console.error('Error getting trial IPs:', error);
+      return [];
+    }
+  }
+
+  static async saveTrialIPs(ips: string[]): Promise<void> {
+    try {
+      await Storage.set({
+        key: 'trial_ips',
+        value: JSON.stringify(ips)
+      });
+    } catch (error) {
+      console.error('Error saving trial IPs:', error);
     }
   }
 }
