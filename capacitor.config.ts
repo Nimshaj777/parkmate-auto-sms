@@ -1,13 +1,9 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.7545009ae9664934a588347c6be943fd',
-  appName: 'Parking SMS - Automated Parking SMS App',
+  appId: 'app.lovable.parkmate',
+  appName: 'ParkMate Auto SMS',
   webDir: 'dist',
-  server: {
-    url: 'https://7545009a-e966-4934-a588-347c6be943fd.lovableproject.com?forceHideBadge=true',
-    cleartext: true
-  },
   plugins: {
     LocalNotifications: {
       smallIcon: 'ic_stat_icon_config_sample',
