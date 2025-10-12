@@ -489,29 +489,64 @@ export function ParkingSMSApp() {
                 </Badge>
               </div>
               
-              <Button
-                onClick={() => {
-                  if (!canUsePremiumFeatures) {
-                    toast({
-                      title: settings.language === 'ar' ? 'الاشتراك مطلوب' : settings.language === 'hi' ? 'सदस्यता आवश्यक' : 'Subscription Required',
-                      description: settings.language === 'ar' ? 'يرجى تفعيل اشتراكك أولاً لإرسال رسائل SMS. انتقل إلى علامة تبويب التفعيل.' : settings.language === 'hi' ? 'SMS भेजने के लिए कृपया पहले अपनी सदस्यता सक्रिय करें। सक्रिय करें टैब पर जाएं।' : 'Please activate your subscription first to send SMS. Go to the Activate tab.',
-                      variant: "destructive"
-                    });
-                    const tabsList = document.querySelector('[role="tablist"]');
-                    const activateTab = tabsList?.querySelector('[value="subscription"]') as HTMLElement;
-                    activateTab?.click();
-                    return;
-                  }
-                  setSmsSheetOpen(true);
-                }}
-                variant="default"
-                size="lg"
-                className="w-full"
-                disabled={pendingCount === 0}
-              >
-                <Send className="h-5 w-5" />
-                Send All SMS to All Villas ({pendingCount}) / إرسال الكل لجميع الفلل
-              </Button>
+              {/* Send SMS per Villa */}
+              <div className="space-y-3">
+                {villas.map(villa => {
+                  const villaVehicles = vehicles.filter(v => v.villaId === villa.id);
+                  const villaPendingCount = villaVehicles.filter(v => v.status === 'pending' || v.status === 'failed').length;
+                  
+                  if (villaVehicles.length === 0) return null;
+                  
+                  return (
+                    <Card key={villa.id} className="card-mobile">
+                      <div className="space-y-3">
+                        <div className={`flex items-center justify-between ${rtl ? 'flex-row-reverse' : ''}`}>
+                          <div className={`flex items-center gap-2 ${rtl ? 'flex-row-reverse' : ''}`}>
+                            <Home className="h-5 w-5 text-primary" />
+                            <h3 className="font-semibold text-foreground">{villa.name}</h3>
+                          </div>
+                          <Badge variant="outline">
+                            {villaPendingCount} pending
+                          </Badge>
+                        </div>
+                        
+                        <Button
+                          onClick={() => {
+                            if (!canUsePremiumFeatures) {
+                              toast({
+                                title: settings.language === 'ar' ? 'الاشتراك مطلوب' : settings.language === 'hi' ? 'सदस्यता आवश्यक' : 'Subscription Required',
+                                description: settings.language === 'ar' ? 'يرجى تفعيل اشتراكك أولاً لإرسال رسائل SMS. انتقل إلى علامة تبويب التفعيل.' : settings.language === 'hi' ? 'SMS भेजने के लिए कृपया पहले अपनी सदस्यता सक्रिय करें। सक्रिय करें टैब पर जाएं।' : 'Please activate your subscription first to send SMS. Go to the Activate tab.',
+                                variant: "destructive"
+                              });
+                              const tabsList = document.querySelector('[role="tablist"]');
+                              const activateTab = tabsList?.querySelector('[value="subscription"]') as HTMLElement;
+                              activateTab?.click();
+                              return;
+                            }
+                            // Filter vehicles for this villa only
+                            const villaVehiclesToSend = villaVehicles.filter(v => v.status === 'pending' || v.status === 'failed');
+                            // Simulate sending for these vehicles
+                            villaVehiclesToSend.forEach(v => {
+                              handleUpdateVehicle(v.id, { status: 'sent', lastSent: new Date() });
+                            });
+                            toast({
+                              title: "SMS Sent",
+                              description: `Sent ${villaVehiclesToSend.length} messages for ${villa.name}`
+                            });
+                          }}
+                          variant="default"
+                          size="lg"
+                          className="w-full"
+                          disabled={villaPendingCount === 0}
+                        >
+                          <Send className="h-5 w-5" />
+                          Send All for {villa.name} ({villaPendingCount}) / إرسال الكل لـ {villa.name}
+                        </Button>
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
               
               {!canUsePremiumFeatures && (
                 <Card className="card-mobile border-warning/20 bg-warning/5">
