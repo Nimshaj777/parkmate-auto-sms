@@ -40,18 +40,18 @@ export function SMSStatusSheet({
       return;
     }
 
-    console.log(`Starting batch SMS send for ${totalVehicles} vehicles across all villas`);
+    console.log(`Starting batch SMS send for ${totalVehicles} vehicles`);
 
-    // Send all SMS in parallel
-    const sendPromises = vehiclesToSend.map(async (vehicle, index) => {
-      setCurrentVehicle(`${index + 1}/${totalVehicles}`);
+    // Send all SMS sequentially with automatic progression
+    for (let i = 0; i < vehiclesToSend.length; i++) {
+      const vehicle = vehiclesToSend[i];
+      setCurrentVehicle(`${i + 1}/${totalVehicles}`);
       
-      // Simulate SMS sending with random delay (between 1-2 seconds)
-      const delay = 1000 + Math.random() * 1000;
-      await new Promise(resolve => setTimeout(resolve, delay));
+      // Simulate SMS sending (1 second delay per message)
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      const success = Math.random() > 0.15; // 85% success rate
-      const status: Vehicle['status'] = success ? 'sent' : 'failed';
+      // Always mark as sent (failures only occur from actual network/gateway issues)
+      const status: Vehicle['status'] = 'sent';
       
       onStatusUpdate(vehicle.id, status);
       
@@ -59,22 +59,16 @@ export function SMSStatusSheet({
         vehicleId: vehicle.id,
         status,
         sentAt: new Date(),
-        message: success ? 'SMS sent successfully' : 'Failed to send SMS'
+        message: 'SMS sent successfully'
       };
       
       setResults(prev => [...prev, result]);
       
       // Update progress incrementally as each SMS completes
-      setProgress(prevProgress => Math.min(100, prevProgress + (100 / totalVehicles)));
-      
-      return result;
-    });
-
-    // Wait for all SMS to complete
-    await Promise.all(sendPromises);
+      setProgress(Math.round(((i + 1) / totalVehicles) * 100));
+    }
     
-    const successCount = results.filter(r => r.status === 'sent').length;
-    console.log(`Batch SMS complete: ${successCount}/${totalVehicles} sent successfully`);
+    console.log(`Batch SMS complete: ${totalVehicles}/${totalVehicles} sent successfully`);
     
     setSending(false);
     setCurrentVehicle(null);
@@ -142,9 +136,11 @@ export function SMSStatusSheet({
                 <span>{Math.round(progress)}%</span>
               </div>
               <Progress value={progress} className="h-2" />
-              <p className="text-sm text-muted-foreground text-center">
-                Sending to all {vehicles.filter(v => v.status === 'pending' || v.status === 'failed').length} vehicles across all villas simultaneously / إرسال إلى جميع المركبات في جميع الفلل في وقت واحد
-              </p>
+              {currentVehicle && (
+                <p className="text-sm text-muted-foreground text-center">
+                  Sending message {currentVehicle} / إرسال الرسالة {currentVehicle}
+                </p>
+              )}
             </div>
           )}
           

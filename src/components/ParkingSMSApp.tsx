@@ -511,7 +511,7 @@ export function ParkingSMSApp() {
                         </div>
                         
                         <Button
-                          onClick={() => {
+                          onClick={async () => {
                             if (!canUsePremiumFeatures) {
                               toast({
                                 title: settings.language === 'ar' ? 'الاشتراك مطلوب' : settings.language === 'hi' ? 'सदस्यता आवश्यक' : 'Subscription Required',
@@ -523,15 +523,33 @@ export function ParkingSMSApp() {
                               activateTab?.click();
                               return;
                             }
+                            
                             // Filter vehicles for this villa only
                             const villaVehiclesToSend = villaVehicles.filter(v => v.status === 'pending' || v.status === 'failed');
-                            // Simulate sending for these vehicles
-                            villaVehiclesToSend.forEach(v => {
-                              handleUpdateVehicle(v.id, { status: 'sent', lastSent: new Date() });
-                            });
+                            
+                            if (villaVehiclesToSend.length === 0) return;
+                            
+                            // Show starting toast
                             toast({
-                              title: "SMS Sent",
-                              description: `Sent ${villaVehiclesToSend.length} messages for ${villa.name}`
+                              title: "Sending SMS / جاري الإرسال",
+                              description: `Sending ${villaVehiclesToSend.length} messages for ${villa.name} / إرسال ${villaVehiclesToSend.length} رسائل لـ ${villa.name}`
+                            });
+                            
+                            // Send SMS sequentially (one by one)
+                            for (let i = 0; i < villaVehiclesToSend.length; i++) {
+                              const vehicle = villaVehiclesToSend[i];
+                              
+                              // Simulate SMS sending delay (1 second per message)
+                              await new Promise(resolve => setTimeout(resolve, 1000));
+                              
+                              // Update vehicle status to sent
+                              await handleUpdateVehicle(vehicle.id, { status: 'sent', lastSent: new Date() });
+                            }
+                            
+                            // Show completion toast
+                            toast({
+                              title: "SMS Sent / تم الإرسال",
+                              description: `Successfully sent ${villaVehiclesToSend.length} messages for ${villa.name} / تم إرسال ${villaVehiclesToSend.length} رسائل لـ ${villa.name}`
                             });
                           }}
                           variant="default"
