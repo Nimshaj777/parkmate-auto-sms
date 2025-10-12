@@ -125,14 +125,16 @@ export function ParkingSMSApp() {
   };
 
   const handleUpdateVehicle = async (id: string, updates: Partial<Vehicle>) => {
-    const updatedVehicles = vehicles.map(v => 
-      v.id === id 
-        ? { ...v, ...updates, updatedAt: new Date(), lastSent: updates.status === 'sent' ? new Date() : v.lastSent }
-        : v
-    );
-    
-    setVehicles(updatedVehicles);
-    await LocalStorage.saveVehicles(updatedVehicles);
+    setVehicles((prev) => {
+      const updatedVehicles = prev.map(v => 
+        v.id === id 
+          ? { ...v, ...updates, updatedAt: new Date(), lastSent: updates.status === 'sent' ? new Date() : v.lastSent }
+          : v
+      );
+      // Persist based on the latest state to avoid stale overwrites during sequential updates
+      LocalStorage.saveVehicles(updatedVehicles);
+      return updatedVehicles;
+    });
   };
 
   const handleDeleteVehicle = async (id: string) => {
