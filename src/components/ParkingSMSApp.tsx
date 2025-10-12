@@ -6,7 +6,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { VehicleCard } from '@/components/VehicleCard';
 import { AddVehicleDialog } from '@/components/AddVehicleDialog';
 import { SMSStatusSheet } from '@/components/SMSStatusSheet';
-import { SubscriptionCard } from '@/components/SubscriptionCard';
 import { VillaManager } from '@/components/VillaManager';
 import { AutomationSettings } from '@/components/AutomationSettings';
 import { VillaSubscriptionList } from '@/components/VillaSubscriptionList';
@@ -14,9 +13,8 @@ import { Car, Send, Crown, Globe, MessageSquare, Moon, Sun, Trash2, Home, Clock 
 import { LocalStorage } from '@/utils/storage';
 import { getTranslations, isRTL } from '@/utils/i18n';
 import { useToast } from '@/hooks/use-toast';
-import { SubscriptionAPI } from '@/utils/subscriptionApi';
 import { VillaSubscriptionAPI } from '@/utils/villaSubscriptionApi';
-import type { Vehicle, AppSettings, SubscriptionStatus, Villa, AutomationSchedule, VillaSubscription } from '@/types';
+import type { Vehicle, AppSettings, Villa, AutomationSchedule, VillaSubscription } from '@/types';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,11 +36,6 @@ export function ParkingSMSApp() {
     defaultSmsNumber: '3009',
     notificationsEnabled: true,
     automationEnabled: false
-  });
-  const [subscription, setSubscription] = useState<SubscriptionStatus>({
-    isActive: false,
-    type: 'trial',
-    expiresAt: undefined
   });
   const [smsSheetOpen, setSmsSheetOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -82,10 +75,6 @@ export function ParkingSMSApp() {
         setSchedules(schedulesData);
         setSettings(settingsData);
         setVillaSubscriptions(villaSubsData);
-        
-        // Load subscription status from backend
-        const subscriptionData = await SubscriptionAPI.getSubscriptionStatus();
-        setSubscription(subscriptionData);
       } catch (error) {
         console.error('Error loading data:', error);
       } finally {
@@ -96,18 +85,18 @@ export function ParkingSMSApp() {
     loadData();
   }, []);
 
-  // Periodically check subscription status (every 5 minutes)
+  // Periodically refresh villa subscriptions (every 5 minutes)
   useEffect(() => {
-    const checkSubscription = async () => {
+    const checkVillaSubscriptions = async () => {
       try {
-        const subscriptionData = await SubscriptionAPI.getSubscriptionStatus();
-        setSubscription(subscriptionData);
+        const villaSubsData = await VillaSubscriptionAPI.getVillaSubscriptions();
+        setVillaSubscriptions(villaSubsData);
       } catch (error) {
-        console.error('Error checking subscription:', error);
+        console.error('Error checking villa subscriptions:', error);
       }
     };
 
-    const interval = setInterval(checkSubscription, 5 * 60 * 1000);
+    const interval = setInterval(checkVillaSubscriptions, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
 
@@ -279,15 +268,6 @@ export function ParkingSMSApp() {
     }
   };
 
-  const handleSubscriptionUpdate = async (newSubscription: SubscriptionStatus) => {
-    setSubscription(newSubscription);
-    
-    toast({
-      title: "Subscription Updated",
-      description: "Your subscription has been activated successfully."
-    });
-  };
-
   const handleVillaSubscriptionUpdate = async () => {
     // Reload villa subscriptions after activation
     try {
@@ -302,9 +282,11 @@ export function ParkingSMSApp() {
     await handleUpdateVehicle(vehicleId, { status });
   };
 
-  // Check subscription status
-  const isSubscriptionExpired = subscription.expiresAt && new Date() > new Date(subscription.expiresAt);
-  const canUsePremiumFeatures = subscription.isActive && !isSubscriptionExpired;
+  // Check if any villa has an active subscription
+  const hasActiveVillaSubscription = villaSubscriptions.some(
+    sub => sub.isActive && new Date(sub.expiresAt) > new Date()
+  );
+  const canUsePremiumFeatures = hasActiveVillaSubscription;
 
   const pendingCount = vehicles.filter(v => v.status === 'pending' || v.status === 'failed').length;
   const sentCount = vehicles.filter(v => v.status === 'sent' || v.status === 'verified').length;
@@ -474,7 +456,7 @@ export function ParkingSMSApp() {
               onUpdate={handleUpdateVilla}
               onDelete={handleDeleteVilla}
               isRTL={rtl}
-              villaLimit={subscription.villaLimit || 1}
+              villaLimit={999}
               language={settings.language}
             />
           </TabsContent>
@@ -574,26 +556,13 @@ export function ParkingSMSApp() {
 
           {/* Subscription Tab */}
           <TabsContent value="subscription" className="space-y-4">
-            <div className={`flex items-center justify-between ${rtl ? 'flex-row-reverse' : ''}`}>
-              <h2 className="text-lg font-semibold text-foreground">{translations.subscription}</h2>
-            </div>
-            
-            <SubscriptionCard
-              subscription={subscription}
-              onUpdate={handleSubscriptionUpdate}
-              isRTL={rtl}
+            <VillaSubscriptionList
+              villas={villas}
+              villaSubscriptions={villaSubscriptions}
+              onUpdate={handleVillaSubscriptionUpdate}
               language={settings.language}
+              direction={rtl ? 'rtl' : 'ltr'}
             />
-
-            {villas.length > 0 && (
-              <VillaSubscriptionList
-                villas={villas}
-                villaSubscriptions={villaSubscriptions}
-                onUpdate={handleVillaSubscriptionUpdate}
-                language={settings.language}
-                direction={rtl ? 'rtl' : 'ltr'}
-              />
-            )}
           </TabsContent>
         </Tabs>
       </main>

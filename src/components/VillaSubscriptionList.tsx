@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Crown, Check, Lock, Calendar } from "lucide-react";
+import { Crown, Check, Lock, Calendar, Home } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Device } from "@capacitor/device";
@@ -122,7 +122,17 @@ export function VillaSubscriptionList({
         <h3 className="text-lg font-semibold">{text.villaSubscriptions}</h3>
       </div>
 
-      <div className="space-y-4">
+      {villas.length === 0 ? (
+        <div className="text-center py-8 text-muted-foreground">
+          <Home className="h-12 w-12 mx-auto mb-3 opacity-50" />
+          <p className="text-sm">
+            {language === 'en' && 'No villas added yet. Go to the Villas tab to add your first villa.'}
+            {language === 'ar' && 'لم يتم إضافة فيلات بعد. انتقل إلى علامة تبويب الفيلات لإضافة أول فيلا.'}
+            {language === 'hi' && 'अभी तक कोई विला नहीं जोड़ा गया। अपना पहला विला जोड़ने के लिए विला टैब पर जाएं।'}
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-4">
         {villas.map((villa) => {
           const subscription = getVillaSubscription(villa.id);
           const isActive = !!subscription;
@@ -188,7 +198,8 @@ export function VillaSubscriptionList({
             </div>
           );
         })}
-      </div>
+        </div>
+      )}
     </Card>
   );
 }
