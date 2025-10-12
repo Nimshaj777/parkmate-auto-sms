@@ -12,14 +12,22 @@ interface AddVehicleDialogProps {
   villas: Villa[];
   isRTL: boolean;
   vehicles: Vehicle[];
+  language: 'en' | 'ar' | 'hi';
 }
 
-export function AddVehicleDialog({ onAdd, villas, isRTL, vehicles }: AddVehicleDialogProps) {
+export function AddVehicleDialog({ onAdd, villas, isRTL, vehicles, language }: AddVehicleDialogProps) {
   const [open, setOpen] = useState(false);
   const [plateNumber, setPlateNumber] = useState('');
   const [roomName, setRoomName] = useState('');
   const [smsMessage, setSmsMessage] = useState('');
   const [selectedVilla, setSelectedVilla] = useState(villas[0]?.id || '');
+
+  const t = {
+    en: { addVehicle: 'Add Vehicle', addNewVehicle: 'Add New Vehicle', villa: 'Villa', plateNumber: 'Plate Number', enterPlate: 'Enter your vehicle\'s plate number', roomFlat: 'Room/Flat Name', enterRoom: 'Enter room/flat identifier', smsMessage: 'SMS Message', messageFormat: 'Message format for government number', add: 'Add', cancel: 'Cancel', limitReached: 'Vehicle limit reached! Each villa can have maximum 20 vehicles. Please add another villa to continue.' },
+    ar: { addVehicle: 'إضافة مركبة', addNewVehicle: 'إضافة مركبة جديدة', villa: 'الفيلا', plateNumber: 'رقم اللوحة', enterPlate: 'أدخل رقم لوحة مركبتك', roomFlat: 'اسم الغرفة/الشقة', enterRoom: 'أدخل معرف الغرفة/الشقة', smsMessage: 'رسالة SMS', messageFormat: 'تنسيق الرسالة للرقم الحكومي', add: 'إضافة', cancel: 'إلغاء', limitReached: 'تم الوصول إلى الحد الأقصى! كل فيلا يمكن أن تحتوي على 20 مركبة كحد أقصى. يرجى إضافة فيلا أخرى للمتابعة.' },
+    hi: { addVehicle: 'वाहन जोड़ें', addNewVehicle: 'नया वाहन जोड़ें', villa: 'विला', plateNumber: 'नंबर प्लेट', enterPlate: 'अपने वाहन की नंबर प्लेट दर्ज करें', roomFlat: 'कमरा/फ्लैट का नाम', enterRoom: 'कमरा/फ्लैट पहचानकर्ता दर्ज करें', smsMessage: 'SMS संदेश', messageFormat: 'सरकारी नंबर के लिए संदेश प्रारूप', add: 'जोड़ें', cancel: 'रद्द करें', limitReached: 'वाहन सीमा पूरी हो गई! प्रत्येक विला में अधिकतम 20 वाहन हो सकते हैं। जारी रखने के लिए कृपया दूसरा विला जोड़ें।' }
+  };
+  const text = t[language];
 
   const MAX_VEHICLES_PER_VILLA = 20;
 
@@ -31,7 +39,7 @@ export function AddVehicleDialog({ onAdd, villas, isRTL, vehicles }: AddVehicleD
     // Check vehicle limit for selected villa
     const vehiclesInVilla = vehicles.filter(v => v.villaId === selectedVilla).length;
     if (vehiclesInVilla >= MAX_VEHICLES_PER_VILLA) {
-      alert(`Vehicle limit reached! Each villa can have maximum ${MAX_VEHICLES_PER_VILLA} vehicles. Please add another villa to continue.`);
+      alert(text.limitReached);
       return;
     }
     
@@ -75,7 +83,7 @@ export function AddVehicleDialog({ onAdd, villas, isRTL, vehicles }: AddVehicleD
       <DialogTrigger asChild>
         <Button variant="mobile" size="mobile" className="w-full">
           <Plus className="h-5 w-5" />
-          Add Vehicle / إضافة مركبة
+          {text.addVehicle}
         </Button>
       </DialogTrigger>
       
@@ -83,14 +91,14 @@ export function AddVehicleDialog({ onAdd, villas, isRTL, vehicles }: AddVehicleD
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
             <Car className="h-6 w-6 text-primary" />
-            Add New Vehicle / إضافة مركبة جديدة
+            {text.addNewVehicle}
           </DialogTitle>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-6 pt-4">
           <div className="space-y-2">
             <Label htmlFor="villa" className="text-sm font-medium">
-              Villa / الفيلا
+              {text.villa}
             </Label>
             <Select value={selectedVilla} onValueChange={setSelectedVilla}>
               <SelectTrigger>
@@ -111,7 +119,7 @@ export function AddVehicleDialog({ onAdd, villas, isRTL, vehicles }: AddVehicleD
 
           <div className="space-y-2">
             <Label htmlFor="plateNumber" className="text-sm font-medium">
-              Plate Number / رقم اللوحة
+              {text.plateNumber}
             </Label>
             <Input
               id="plateNumber"
@@ -123,13 +131,13 @@ export function AddVehicleDialog({ onAdd, villas, isRTL, vehicles }: AddVehicleD
               required
             />
             <p className="text-xs text-muted-foreground">
-              Enter your vehicle's plate number / أدخل رقم لوحة مركبتك
+              {text.enterPlate}
             </p>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="roomName" className="text-sm font-medium">
-              Room/Flat Name / اسم الغرفة/الشقة
+              {text.roomFlat}
             </Label>
             <Input
               id="roomName"
@@ -140,13 +148,13 @@ export function AddVehicleDialog({ onAdd, villas, isRTL, vehicles }: AddVehicleD
               required
             />
             <p className="text-xs text-muted-foreground">
-              Enter room/flat identifier / أدخل معرف الغرفة/الشقة
+              {text.enterRoom}
             </p>
           </div>
           
           <div className="space-y-2">
             <Label htmlFor="smsMessage" className="text-sm font-medium">
-              SMS Message / رسالة SMS
+              {text.smsMessage}
             </Label>
             <Input
               id="smsMessage"
@@ -158,14 +166,14 @@ export function AddVehicleDialog({ onAdd, villas, isRTL, vehicles }: AddVehicleD
               required
             />
             <p className="text-xs text-muted-foreground">
-              Message format for government number / تنسيق الرسالة للرقم الحكومي
+              {text.messageFormat}
             </p>
           </div>
           
           <div className={`flex gap-3 pt-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
             <Button type="submit" variant="success" size="mobile" className="flex-1">
               <Plus className="h-4 w-4" />
-              Add Vehicle / إضافة
+              {text.add}
             </Button>
             <Button
               type="button"
@@ -174,7 +182,7 @@ export function AddVehicleDialog({ onAdd, villas, isRTL, vehicles }: AddVehicleD
               onClick={() => setOpen(false)}
               className="flex-1"
             >
-              Cancel / إلغاء
+              {text.cancel}
             </Button>
           </div>
         </form>

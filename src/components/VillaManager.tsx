@@ -15,13 +15,21 @@ interface VillaManagerProps {
   onDelete: (id: string) => void;
   isRTL: boolean;
   villaLimit?: number;
+  language: 'en' | 'ar' | 'hi';
 }
 
-export function VillaManager({ villas, onAdd, onUpdate, onDelete, isRTL, villaLimit = 1 }: VillaManagerProps) {
+export function VillaManager({ villas, onAdd, onUpdate, onDelete, isRTL, villaLimit = 1, language }: VillaManagerProps) {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingVilla, setEditingVilla] = useState<Villa | null>(null);
   const [villaName, setVillaName] = useState('');
   const [smsNumber, setSmsNumber] = useState('3009');
+
+  const t = {
+    en: { villas: 'Villas', villasUsed: 'villas used', addVilla: 'Add Villa', addNewVilla: 'Add New Villa', villaName: 'Villa Name', defaultNumber: 'Default SMS Number', add: 'Add', cancel: 'Cancel', save: 'Save', sms: 'SMS' },
+    ar: { villas: 'الفيلات', villasUsed: 'فيلا مستخدمة', addVilla: 'إضافة فيلا', addNewVilla: 'إضافة فيلا جديدة', villaName: 'اسم الفيلا', defaultNumber: 'الرقم الافتراضي', add: 'إضافة', cancel: 'إلغاء', save: 'حفظ', sms: 'رسالة' },
+    hi: { villas: 'विला', villasUsed: 'विला उपयोग में', addVilla: 'विला जोड़ें', addNewVilla: 'नया विला जोड़ें', villaName: 'विला का नाम', defaultNumber: 'डिफ़ॉल्ट SMS नंबर', add: 'जोड़ें', cancel: 'रद्द करें', save: 'सहेजें', sms: 'SMS' }
+  };
+  const text = t[language];
 
   const canAddVilla = villas.length < villaLimit;
 
@@ -74,25 +82,25 @@ export function VillaManager({ villas, onAdd, onUpdate, onDelete, isRTL, villaLi
     <div className="space-y-4">
       <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
         <div>
-          <h3 className="text-lg font-semibold">Villas / الفيلات</h3>
+          <h3 className="text-lg font-semibold">{text.villas}</h3>
           <p className="text-xs text-muted-foreground mt-1">
-            {villas.length} / {villaLimit} villas used
+            {villas.length} / {villaLimit} {text.villasUsed}
           </p>
         </div>
         <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
           <DialogTrigger asChild>
             <Button variant="outline" size="sm" disabled={!canAddVilla}>
               <Plus className="h-4 w-4" />
-              Add Villa / إضافة فيلا
+              {text.addVilla}
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Add New Villa / إضافة فيلا جديدة</DialogTitle>
+              <DialogTitle>{text.addNewVilla}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleAdd} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="villaName">Villa Name / اسم الفيلا</Label>
+                <Label htmlFor="villaName">{text.villaName}</Label>
                 <Input
                   id="villaName"
                   value={villaName}
@@ -102,7 +110,7 @@ export function VillaManager({ villas, onAdd, onUpdate, onDelete, isRTL, villaLi
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="smsNumber">Default SMS Number / الرقم الافتراضي</Label>
+                <Label htmlFor="smsNumber">{text.defaultNumber}</Label>
                 <Input
                   id="smsNumber"
                   value={smsNumber}
@@ -112,14 +120,14 @@ export function VillaManager({ villas, onAdd, onUpdate, onDelete, isRTL, villaLi
                 />
               </div>
               <div className="flex gap-2">
-                <Button type="submit" className="flex-1">Add / إضافة</Button>
+                <Button type="submit" className="flex-1">{text.add}</Button>
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => setShowAddDialog(false)}
                   className="flex-1"
                 >
-                  Cancel / إلغاء
+                  {text.cancel}
                 </Button>
               </div>
             </form>
@@ -134,7 +142,7 @@ export function VillaManager({ villas, onAdd, onUpdate, onDelete, isRTL, villaLi
               {editingVilla?.id === villa.id ? (
                 <form onSubmit={handleUpdate} className="space-y-3">
                   <div className="space-y-2">
-                    <Label htmlFor={`editName-${villa.id}`}>Villa Name</Label>
+                    <Label htmlFor={`editName-${villa.id}`}>{text.villaName}</Label>
                     <Input
                       id={`editName-${villa.id}`}
                       value={villaName}
@@ -143,7 +151,7 @@ export function VillaManager({ villas, onAdd, onUpdate, onDelete, isRTL, villaLi
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor={`editNumber-${villa.id}`}>SMS Number</Label>
+                    <Label htmlFor={`editNumber-${villa.id}`}>{text.sms} Number</Label>
                     <Input
                       id={`editNumber-${villa.id}`}
                       value={smsNumber}
@@ -153,7 +161,7 @@ export function VillaManager({ villas, onAdd, onUpdate, onDelete, isRTL, villaLi
                   </div>
                   <div className="flex gap-2">
                     <Button type="submit" size="sm" className="flex-1">
-                      Save / حفظ
+                      {text.save}
                     </Button>
                     <Button
                       type="button"
@@ -162,7 +170,7 @@ export function VillaManager({ villas, onAdd, onUpdate, onDelete, isRTL, villaLi
                       onClick={handleCancelEdit}
                       className="flex-1"
                     >
-                      Cancel / إلغاء
+                      {text.cancel}
                     </Button>
                   </div>
                 </form>
@@ -175,7 +183,7 @@ export function VillaManager({ villas, onAdd, onUpdate, onDelete, isRTL, villaLi
                     <div>
                       <h4 className="font-medium">{villa.name}</h4>
                       <p className="text-sm text-muted-foreground">
-                        SMS: {villa.defaultSmsNumber}
+                        {text.sms}: {villa.defaultSmsNumber}
                       </p>
                     </div>
                   </div>

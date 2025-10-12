@@ -13,11 +13,107 @@ interface SubscriptionCardProps {
   subscription: SubscriptionStatus;
   onUpdate: (status: SubscriptionStatus) => void;
   isRTL: boolean;
+  language: 'en' | 'ar' | 'hi';
 }
 
-export function SubscriptionCard({ subscription, onUpdate, isRTL }: SubscriptionCardProps) {
+export function SubscriptionCard({ subscription, onUpdate, isRTL, language }: SubscriptionCardProps) {
   const [activationCode, setActivationCode] = useState('');
   const [isActivating, setIsActivating] = useState(false);
+
+  const t = {
+    en: {
+      invalidFormat: "Invalid Code Format",
+      formatDesc: "Code must be in format: PK######XX",
+      success: "Success!",
+      activationFailed: "Activation Failed",
+      error: "Error",
+      freeTrial: "Free Trial",
+      premium: "Premium",
+      villaAccess: "Villa Access",
+      perVilla: "Per Villa",
+      totalCapacity: "Total Capacity",
+      vehicles: "vehicles",
+      across: "across",
+      villa: "villa",
+      villas: "villas",
+      activeCode: "Active Code",
+      activationCode: "Activation Code",
+      activate: "Activate",
+      enterCode: "Enter your activation code",
+      expired: "Expired",
+      active: "Active",
+      inactive: "Inactive",
+      daysLeft: "days left",
+      howItWorks: "How it Works:",
+      eachCode: "Each code grants access to specific villas (1, 2, or more)",
+      oneVilla: "1 Villa = 20 vehicles max",
+      newCodes: "New codes extend your subscription time automatically",
+      getCode: "Get Code",
+      cars: "Cars"
+    },
+    ar: {
+      invalidFormat: "تنسيق رمز غير صالح",
+      formatDesc: "يجب أن يكون الرمز بتنسيق: PK######XX",
+      success: "نجح!",
+      activationFailed: "فشل التفعيل",
+      error: "خطأ",
+      freeTrial: "تجربة مجانية",
+      premium: "بريميوم",
+      villaAccess: "الوصول إلى الفيلا",
+      perVilla: "لكل فيلا",
+      totalCapacity: "السعة الإجمالية",
+      vehicles: "مركبة",
+      across: "عبر",
+      villa: "فيلا",
+      villas: "فيلات",
+      activeCode: "الرمز النشط",
+      activationCode: "رمز التفعيل",
+      activate: "تفعيل",
+      enterCode: "أدخل رمز التفعيل",
+      expired: "منتهي",
+      active: "نشط",
+      inactive: "غير نشط",
+      daysLeft: "أيام متبقية",
+      howItWorks: "كيف يعمل:",
+      eachCode: "كل رمز يمنح الوصول إلى عدد محدد من الفيلات",
+      oneVilla: "1 فيلا = ٢٠ مركبة كحد أقصى",
+      newCodes: "الرموز الجديدة تمدد وقت اشتراكك تلقائيًا",
+      getCode: "احصل على رمز",
+      cars: "مركبة"
+    },
+    hi: {
+      invalidFormat: "अमान्य कोड प्रारूप",
+      formatDesc: "कोड प्रारूप होना चाहिए: PK######XX",
+      success: "सफलता!",
+      activationFailed: "सक्रियण विफल",
+      error: "त्रुटि",
+      freeTrial: "मुफ्त परीक्षण",
+      premium: "प्रीमियम",
+      villaAccess: "विला एक्सेस",
+      perVilla: "प्रति विला",
+      totalCapacity: "कुल क्षमता",
+      vehicles: "वाहन",
+      across: "में",
+      villa: "विला",
+      villas: "विला",
+      activeCode: "सक्रिय कोड",
+      activationCode: "सक्रियण कोड",
+      activate: "सक्रिय करें",
+      enterCode: "अपना सक्रियण कोड दर्ज करें",
+      expired: "समाप्त",
+      active: "सक्रिय",
+      inactive: "निष्क्रिय",
+      daysLeft: "दिन शेष",
+      howItWorks: "यह कैसे काम करता है:",
+      eachCode: "प्रत्येक कोड विशिष्ट विला तक पहुंच प्रदान करता है",
+      oneVilla: "1 विला = अधिकतम 20 वाहन",
+      newCodes: "नए कोड आपकी सदस्यता समय को स्वचालित रूप से बढ़ाते हैं",
+      getCode: "कोड प्राप्त करें",
+      cars: "वाहन"
+    }
+  };
+
+  const text = t[language];
 
   const handleActivation = async () => {
     if (!activationCode.trim()) return;
@@ -25,8 +121,8 @@ export function SubscriptionCard({ subscription, onUpdate, isRTL }: Subscription
     // Validate format first
     if (!SubscriptionAPI.validateCodeFormat(activationCode.trim())) {
       toast({
-        title: "Invalid Code Format / تنسيق رمز غير صالح / अमान्य कोड प्रारूप",
-        description: "Code must be in format: PK######XX",
+        title: text.invalidFormat,
+        description: text.formatDesc,
         variant: "destructive"
       });
       return;
@@ -43,19 +139,19 @@ export function SubscriptionCard({ subscription, onUpdate, isRTL }: Subscription
         
         const message = result.message || "Subscription activated successfully!";
         toast({
-          title: "Success! / نجح! / सफलता!",
+          title: text.success,
           description: message,
         });
       } else {
         toast({
-          title: "Activation Failed / فشل التفعيل / सक्रियण विफल",
+          title: text.activationFailed,
           description: result.error || "Invalid activation code",
           variant: "destructive"
         });
       }
     } catch (error) {
       toast({
-        title: "Error / خطأ / त्रुटि",
+        title: text.error,
         description: "Failed to activate code. Please try again.",
         variant: "destructive"
       });
@@ -78,21 +174,18 @@ export function SubscriptionCard({ subscription, onUpdate, isRTL }: Subscription
             <Crown className="h-6 w-6 text-primary" />
             <div>
               <h3 className="font-semibold">
-                {subscription.type === 'trial' && 'Free Trial / تجربة مجانية / मुफ्त परीक्षण'}
-                {subscription.type === 'activation_code' && 'Premium / بريميوم / प्रीमियम'}
-                {subscription.type === 'google_play' && 'Premium / بريميوم / प्रीमियम'}
+                {subscription.type === 'trial' && text.freeTrial}
+                {subscription.type === 'activation_code' && text.premium}
+                {subscription.type === 'google_play' && text.premium}
               </h3>
               <p className="text-sm text-muted-foreground">
-                {subscription.villaLimit && `${subscription.villaLimit} ${subscription.villaLimit === 1 ? 'Villa' : 'Villas'} × 20 vehicles`}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {subscription.villaLimit && `${subscription.villaLimit} فيلا × ٢٠ مركبة | ${subscription.villaLimit} विला × २० वाहन`}
+                {subscription.villaLimit && `${subscription.villaLimit} ${subscription.villaLimit === 1 ? text.villa : text.villas} × 20 ${text.vehicles}`}
               </p>
             </div>
           </div>
           
           <Badge variant={isExpired ? 'destructive' : subscription.isActive ? 'success' : 'secondary'}>
-            {isExpired ? 'Expired / منتهي / समाप्त' : subscription.isActive ? 'Active / نشط / सक्रिय' : 'Inactive / غير نشط / निष्क्रिय'}
+            {isExpired ? text.expired : subscription.isActive ? text.active : text.inactive}
           </Badge>
         </div>
         
@@ -102,12 +195,9 @@ export function SubscriptionCard({ subscription, onUpdate, isRTL }: Subscription
             <Calendar className="h-4 w-4 text-muted-foreground" />
             <div className="text-sm">
               {isExpired ? (
-                <span>Expired / انتهت الصلاحية / समाप्त हो गया</span>
+                <span>{text.expired}</span>
               ) : (
-                <>
-                  <span className="font-medium">{daysLeft} days left</span>
-                  <span className="text-muted-foreground"> | {daysLeft} أيام متبقية | {daysLeft} दिन शेष</span>
-                </>
+                <span className="font-medium">{daysLeft} {text.daysLeft}</span>
               )}
             </div>
           </div>
@@ -118,7 +208,7 @@ export function SubscriptionCard({ subscription, onUpdate, isRTL }: Subscription
           <div className="space-y-3">
             <Label htmlFor="activationCode" className="flex items-center gap-2 text-sm font-medium">
               <Key className="h-4 w-4" />
-              Activation Code / رمز التفعيل / सक्रियण कोड
+              {text.activationCode}
             </Label>
             <div className={`flex gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
               <Input
@@ -140,13 +230,13 @@ export function SubscriptionCard({ subscription, onUpdate, isRTL }: Subscription
                 ) : (
                   <>
                     <CheckCircle className="h-4 w-4" />
-                    Activate / تفعيل / सक्रिय करें
+                    {text.activate}
                   </>
                 )}
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              Enter your activation code / أدخل رمز التفعيل / अपना सक्रियण कोड दर्ज करें
+              {text.enterCode}
             </p>
           </div>
         )}
@@ -156,7 +246,7 @@ export function SubscriptionCard({ subscription, onUpdate, isRTL }: Subscription
           <div className="space-y-3 p-4 bg-success/5 rounded-lg border border-success/20">
             <div className="space-y-2">
               <Label className="text-sm font-medium">
-                Active Code / الرمز النشط / सक्रिय कोड
+                {text.activeCode}
               </Label>
               {subscription.activationCode && (
                 <div className="p-3 bg-background rounded-lg border">
@@ -170,26 +260,26 @@ export function SubscriptionCard({ subscription, onUpdate, isRTL }: Subscription
             <div className="grid grid-cols-2 gap-3 pt-2">
               <div className="p-3 bg-background rounded-lg border">
                 <p className="text-xs text-muted-foreground mb-1">
-                  Villa Access / الوصول إلى الفيلا / विला एक्सेस
+                  {text.villaAccess}
                 </p>
                 <p className="text-lg font-semibold">
-                  {subscription.villaLimit || 1} {subscription.villaLimit === 1 ? 'Villa' : 'Villas'}
+                  {subscription.villaLimit || 1} {subscription.villaLimit === 1 ? text.villa : text.villas}
                 </p>
               </div>
               <div className="p-3 bg-background rounded-lg border">
                 <p className="text-xs text-muted-foreground mb-1">
-                  Per Villa / لكل فيلا / प्रति विला
+                  {text.perVilla}
                 </p>
-                <p className="text-lg font-semibold">20 Cars / مركبة / वाहन</p>
+                <p className="text-lg font-semibold">20 {text.cars}</p>
               </div>
             </div>
             
             <div className="p-3 bg-primary/5 rounded-lg border border-primary/20">
               <p className="text-xs text-muted-foreground mb-1">
-                Total Capacity / السعة الإجمالية / कुल क्षमता
+                {text.totalCapacity}
               </p>
               <p className="text-sm font-medium">
-                {(subscription.villaLimit || 1) * 20} vehicles across {subscription.villaLimit || 1} {subscription.villaLimit === 1 ? 'villa' : 'villas'}
+                {(subscription.villaLimit || 1) * 20} {text.vehicles} {text.across} {subscription.villaLimit || 1} {subscription.villaLimit === 1 ? text.villa : text.villas}
               </p>
             </div>
           </div>
@@ -199,16 +289,12 @@ export function SubscriptionCard({ subscription, onUpdate, isRTL }: Subscription
         {(!subscription.isActive || isExpired) && (
           <div className="p-4 bg-muted/50 rounded-lg space-y-2">
             <p className="text-sm font-medium">
-              How it Works / كيف يعمل / यह कैसे काम करता है:
+              {text.howItWorks}
             </p>
             <ul className="text-xs text-muted-foreground space-y-1.5 list-disc list-inside">
-              <li>Each code grants access to specific villas (1, 2, or more)</li>
-              <li>كل رمز يمنح الوصول إلى عدد محدد من الفيلات</li>
-              <li>प्रत्येक कोड विशिष्ट विला तक पहुंच प्रदान करता है</li>
-              <li className="pt-1">1 Villa = 20 vehicles max | 1 فيلا = ٢٠ مركبة كحد أقصى | 1 विला = अधिकतम 20 वाहन</li>
-              <li className="pt-1">New codes extend your subscription time automatically</li>
-              <li>الرموز الجديدة تمدد وقت اشتراكك تلقائيًا</li>
-              <li>नए कोड आपकी सदस्यता समय को स्वचालित रूप से बढ़ाते हैं</li>
+              <li>{text.eachCode}</li>
+              <li>{text.oneVilla}</li>
+              <li>{text.newCodes}</li>
             </ul>
           </div>
         )}
@@ -217,7 +303,7 @@ export function SubscriptionCard({ subscription, onUpdate, isRTL }: Subscription
         <div className={`flex gap-2 pt-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
           {subscription.type !== 'google_play' && (
             <Button variant="outline" size="sm" className="flex-1">
-              Get Code / احصل على رمز / कोड प्राप्त करें
+              {text.getCode}
             </Button>
           )}
           <Button variant="mobile" size="sm" className="flex-1">
