@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Crown, Check, Lock, Calendar, Home } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { Device } from "@capacitor/device";
+import { VillaSubscriptionAPI } from "@/utils/villaSubscriptionApi";
 import type { Villa, VillaSubscription } from "@/types";
 
 interface VillaSubscriptionListProps {
@@ -87,8 +87,7 @@ export function VillaSubscriptionList({
     setActivatingVillas((prev) => ({ ...prev, [villa.id]: true }));
 
     try {
-      const deviceInfo = await Device.getId();
-      const deviceId = deviceInfo.identifier;
+      const deviceId = await VillaSubscriptionAPI.getDeviceId();
 
       const { data, error } = await supabase.functions.invoke('activate-villa-subscription', {
         body: {

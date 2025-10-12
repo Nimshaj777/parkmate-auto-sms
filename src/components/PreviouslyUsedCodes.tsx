@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, History, Copy } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { Device } from "@capacitor/device";
+import { VillaSubscriptionAPI } from "@/utils/villaSubscriptionApi";
 import { toast } from "sonner";
 
 interface UsedCode {
@@ -25,8 +25,7 @@ export function PreviouslyUsedCodes() {
   const loadPreviouslyUsedCodes = async () => {
     try {
       setLoading(true);
-      const deviceInfo = await Device.getId();
-      const deviceId = deviceInfo.identifier;
+      const deviceId = await VillaSubscriptionAPI.getDeviceId();
 
       const { data, error } = await supabase
         .from('activation_codes')
