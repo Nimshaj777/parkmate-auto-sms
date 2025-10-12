@@ -23,7 +23,6 @@ export function AdminCodeGenerator() {
   const [password, setPassword] = useState('');
   const [duration, setDuration] = useState<number>(30);
   const [count, setCount] = useState<number>(1);
-  const [villaCount, setVillaCount] = useState<number>(1);
   const [generatedCodes, setGeneratedCodes] = useState<GeneratedCode[]>([]);
   const [generating, setGenerating] = useState(false);
 
@@ -92,7 +91,7 @@ export function AdminCodeGenerator() {
 
     try {
       const { data, error } = await supabase.functions.invoke('generate-activation-code', {
-        body: { duration, count, villaCount }
+        body: { duration, count, villaCount: 1 }
       });
 
       if (error) throw error;
@@ -105,9 +104,10 @@ export function AdminCodeGenerator() {
 
       setGeneratedCodes([...newCodes, ...generatedCodes]);
       
+      const codeType = duration === 5 ? 'Trial' : 'Subscription';
       toast({
         title: "Codes Generated Successfully!",
-        description: `${count} code(s) generated for ${duration} days with ${villaCount} villa(s)`
+        description: `${count} ${codeType} code(s) generated for ${duration} days`
       });
     } catch (error) {
       toast({
@@ -236,37 +236,37 @@ export function AdminCodeGenerator() {
 
         {/* Code Generator */}
         <Card className="p-6">
-          <h2 className="text-xl font-semibold mb-4">Generate New Codes</h2>
+          <h2 className="text-xl font-semibold mb-4">Generate Activation Codes</h2>
+          <p className="text-sm text-muted-foreground mb-6">
+            Each code activates one villa with up to 20 vehicles. Users can add unlimited villas by activating each one separately.
+          </p>
           
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <div>
-              <Label>Duration</Label>
+              <Label>Code Type & Duration</Label>
               <Select value={duration.toString()} onValueChange={(v) => setDuration(parseInt(v))}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="30">30 Days</SelectItem>
-                  <SelectItem value="60">60 Days</SelectItem>
-                  <SelectItem value="90">90 Days</SelectItem>
+                  <SelectItem value="5">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="text-xs">Trial</Badge>
+                      5 Days
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="30">30 Days (1 Month)</SelectItem>
+                  <SelectItem value="60">60 Days (2 Months)</SelectItem>
+                  <SelectItem value="90">90 Days (3 Months)</SelectItem>
+                  <SelectItem value="180">180 Days (6 Months)</SelectItem>
+                  <SelectItem value="365">365 Days (1 Year)</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-            
-            <div>
-              <Label>Villa Count</Label>
-              <Select value={villaCount.toString()} onValueChange={(v) => setVillaCount(parseInt(v))}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1">1 Villa (20 cars)</SelectItem>
-                  <SelectItem value="2">2 Villas (40 cars)</SelectItem>
-                  <SelectItem value="3">3 Villas (60 cars)</SelectItem>
-                  <SelectItem value="4">4 Villas (80 cars)</SelectItem>
-                  <SelectItem value="5">5 Villas (100 cars)</SelectItem>
-                </SelectContent>
-              </Select>
+              {duration === 5 && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Free trial code - expires in 5 days
+                </p>
+              )}
             </div>
             
             <div>
@@ -278,6 +278,9 @@ export function AdminCodeGenerator() {
                 value={count}
                 onChange={(e) => setCount(parseInt(e.target.value) || 1)}
               />
+              <p className="text-xs text-muted-foreground mt-1">
+                Number of codes to generate
+              </p>
             </div>
             
             <div className="flex items-end">
@@ -318,7 +321,13 @@ export function AdminCodeGenerator() {
                   <div className="flex-1">
                     <code className="text-lg font-mono font-bold">{item.code}</code>
                     <div className="flex gap-2 mt-1">
-                      <Badge variant="secondary">{item.duration} days</Badge>
+                      {item.duration === 5 ? (
+                        <Badge variant="outline" className="border-primary text-primary">
+                          Trial - {item.duration} days
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary">{item.duration} days</Badge>
+                      )}
                       <span className="text-xs text-muted-foreground">
                         {new Date(item.timestamp).toLocaleString()}
                       </span>
