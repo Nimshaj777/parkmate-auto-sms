@@ -578,20 +578,26 @@ export function ParkingSMSApp() {
                         const villaVehicles = vehicles.filter(v => v.villaId === villa.id);
                         const pendingVehicles = villaVehicles.filter(v => v.status === 'pending' || v.status === 'failed');
                         
-                        // Calculate next run time
+                        // Calculate next run time safely
+                        const hasDays = Array.isArray(schedule.daysOfWeek) && schedule.daysOfWeek.some(Boolean);
                         const now = new Date();
-                        const [hours, minutes] = schedule.time.split(':');
-                        const nextRun = new Date();
-                        nextRun.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+                        const [hours, minutes] = (schedule.time || '00:00').split(':');
+                        let nextRun: Date | null = null;
                         
-                        // If time has passed today, check tomorrow
-                        if (nextRun <= now) {
-                          nextRun.setDate(nextRun.getDate() + 1);
-                        }
-                        
-                        // Find next matching day of week
-                        while (!schedule.daysOfWeek[nextRun.getDay()]) {
-                          nextRun.setDate(nextRun.getDate() + 1);
+                        if (hasDays) {
+                          nextRun = new Date();
+                          nextRun.setHours(parseInt(hours || '0'), parseInt(minutes || '0'), 0, 0);
+                          
+                          // If time has passed today, check following day
+                          if (nextRun <= now) {
+                            nextRun.setDate(nextRun.getDate() + 1);
+                          }
+                          
+                          // Find next matching day within a week max (avoid infinite loops)
+                          for (let i = 0; i < 7; i++) {
+                            if (schedule.daysOfWeek[nextRun.getDay()]) break;
+                            nextRun.setDate(nextRun.getDate() + 1);
+                          }
                         }
                         
                         const daysOfWeekLabels = settings.language === 'ar' 
@@ -600,10 +606,12 @@ export function ParkingSMSApp() {
                           ? ['रवि', 'सोम', 'मंगल', 'बुध', 'गुरु', 'शुक्र', 'शनि']
                           : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
                         
-                        const activeDays = schedule.daysOfWeek
-                          .map((active, i) => active ? daysOfWeekLabels[i] : null)
-                          .filter(Boolean)
-                          .join(', ');
+                        const activeDays = hasDays
+                          ? schedule.daysOfWeek
+                              .map((active, i) => active ? daysOfWeekLabels[i] : null)
+                              .filter(Boolean)
+                              .join(', ')
+                          : (settings.language === 'ar' ? 'لا توجد أيام محددة' : settings.language === 'hi' ? 'कोई दिन चुना नहीं' : 'No days selected');
                         
                         return (
                           <Card key={schedule.id} className="p-3 bg-background border-muted">
@@ -621,7 +629,7 @@ export function ParkingSMSApp() {
                               <div className={`flex items-center gap-2 text-xs text-muted-foreground ${rtl ? 'flex-row-reverse' : ''}`}>
                                 <Clock className="h-3 w-3" />
                                 <span>
-                                  {settings.language === 'ar' ? 'التشغيل التالي:' : settings.language === 'hi' ? 'अगली रन:' : 'Next run:'} {nextRun.toLocaleDateString(settings.language === 'ar' ? 'ar-AE' : settings.language === 'hi' ? 'hi-IN' : 'en-US', { weekday: 'short', month: 'short', day: 'numeric' })} @ {schedule.time}
+                                  {settings.language === 'ar' ? 'التشغيل التالي:' : settings.language === 'hi' ? 'अगली रन:' : 'Next run:'} {nextRun ? nextRun.toLocaleDateString(settings.language === 'ar' ? 'ar-AE' : settings.language === 'hi' ? 'hi-IN' : 'en-US', { weekday: 'short', month: 'short', day: 'numeric' }) + ' @ ' + schedule.time : (settings.language === 'ar' ? 'لم يتم اختيار أيام' : settings.language === 'hi' ? 'कोई दिन चुना नहीं' : 'No days selected')}
                                 </span>
                               </div>
                               
