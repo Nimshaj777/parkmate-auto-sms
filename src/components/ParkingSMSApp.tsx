@@ -556,6 +556,134 @@ export function ParkingSMSApp() {
                 </Badge>
               </div>
               
+              {/* Upcoming Scheduled SMS Queue */}
+              {schedules.filter(s => s.enabled).length > 0 && (
+                <Card className="card-mobile border-primary/20 bg-primary/5">
+                  <div className="space-y-3">
+                    <div className={`flex items-center gap-2 ${rtl ? 'flex-row-reverse' : ''}`}>
+                      <Clock className="h-5 w-5 text-primary" />
+                      <h3 className="font-semibold text-foreground">
+                        {settings.language === 'ar' ? 'الرسائل المجدولة القادمة' : settings.language === 'hi' ? 'आगामी अनुसूचित SMS' : 'Upcoming Scheduled SMS'}
+                      </h3>
+                      <Badge variant="default" className="ml-auto">
+                        {schedules.filter(s => s.enabled).length} {settings.language === 'ar' ? 'نشط' : settings.language === 'hi' ? 'सक्रिय' : 'Active'}
+                      </Badge>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      {schedules.filter(s => s.enabled).map(schedule => {
+                        const villa = villas.find(v => v.id === schedule.villaId);
+                        if (!villa) return null;
+                        
+                        const villaVehicles = vehicles.filter(v => v.villaId === villa.id);
+                        const pendingVehicles = villaVehicles.filter(v => v.status === 'pending' || v.status === 'failed');
+                        
+                        // Calculate next run time
+                        const now = new Date();
+                        const [hours, minutes] = schedule.time.split(':');
+                        const nextRun = new Date();
+                        nextRun.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+                        
+                        // If time has passed today, check tomorrow
+                        if (nextRun <= now) {
+                          nextRun.setDate(nextRun.getDate() + 1);
+                        }
+                        
+                        // Find next matching day of week
+                        while (!schedule.daysOfWeek[nextRun.getDay()]) {
+                          nextRun.setDate(nextRun.getDate() + 1);
+                        }
+                        
+                        const daysOfWeekLabels = settings.language === 'ar' 
+                          ? ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت']
+                          : settings.language === 'hi'
+                          ? ['रवि', 'सोम', 'मंगल', 'बुध', 'गुरु', 'शुक्र', 'शनि']
+                          : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                        
+                        const activeDays = schedule.daysOfWeek
+                          .map((active, i) => active ? daysOfWeekLabels[i] : null)
+                          .filter(Boolean)
+                          .join(', ');
+                        
+                        return (
+                          <Card key={schedule.id} className="p-3 bg-background border-muted">
+                            <div className="space-y-2">
+                              <div className={`flex items-center justify-between ${rtl ? 'flex-row-reverse' : ''}`}>
+                                <div className={`flex items-center gap-2 ${rtl ? 'flex-row-reverse' : ''}`}>
+                                  <Home className="h-4 w-4 text-primary" />
+                                  <span className="font-semibold text-sm">{villa.name}</span>
+                                </div>
+                                <Badge variant="outline" className="text-xs">
+                                  {schedule.time}
+                                </Badge>
+                              </div>
+                              
+                              <div className={`flex items-center gap-2 text-xs text-muted-foreground ${rtl ? 'flex-row-reverse' : ''}`}>
+                                <Clock className="h-3 w-3" />
+                                <span>
+                                  {settings.language === 'ar' ? 'التشغيل التالي:' : settings.language === 'hi' ? 'अगली रन:' : 'Next run:'} {nextRun.toLocaleDateString(settings.language === 'ar' ? 'ar-AE' : settings.language === 'hi' ? 'hi-IN' : 'en-US', { weekday: 'short', month: 'short', day: 'numeric' })} @ {schedule.time}
+                                </span>
+                              </div>
+                              
+                              <div className={`flex items-center gap-2 text-xs ${rtl ? 'flex-row-reverse' : ''}`}>
+                                <span className="text-muted-foreground">
+                                  {settings.language === 'ar' ? 'الأيام:' : settings.language === 'hi' ? 'दिन:' : 'Days:'} {activeDays}
+                                </span>
+                              </div>
+                              
+                              <div className={`flex items-center justify-between pt-2 border-t ${rtl ? 'flex-row-reverse' : ''}`}>
+                                <div className={`flex items-center gap-2 ${rtl ? 'flex-row-reverse' : ''}`}>
+                                  <Car className="h-4 w-4 text-muted-foreground" />
+                                  <span className="text-xs text-muted-foreground">
+                                    {villaVehicles.length} {settings.language === 'ar' ? 'مركبة' : settings.language === 'hi' ? 'वाहन' : 'vehicles'}
+                                  </span>
+                                </div>
+                                <Badge variant={pendingVehicles.length > 0 ? "secondary" : "outline"} className="text-xs">
+                                  {pendingVehicles.length} {settings.language === 'ar' ? 'في الانتظار' : settings.language === 'hi' ? 'लंबित' : 'pending'}
+                                </Badge>
+                              </div>
+                              
+                              {pendingVehicles.length > 0 && (
+                                <div className="pt-2">
+                                  <details className="text-xs">
+                                    <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
+                                      {settings.language === 'ar' ? 'عرض المركبات المعلقة' : settings.language === 'hi' ? 'लंबित वाहन देखें' : 'View pending vehicles'} ({pendingVehicles.length})
+                                    </summary>
+                                    <div className="mt-2 space-y-1">
+                                      {pendingVehicles.slice(0, 5).map(vehicle => (
+                                        <div key={vehicle.id} className={`flex items-center justify-between p-1 rounded bg-muted/30 ${rtl ? 'flex-row-reverse' : ''}`}>
+                                          <span className="text-xs font-mono">{vehicle.plateNumber}</span>
+                                          <span className="text-xs text-muted-foreground">{vehicle.roomName}</span>
+                                        </div>
+                                      ))}
+                                      {pendingVehicles.length > 5 && (
+                                        <div className="text-center text-xs text-muted-foreground">
+                                          +{pendingVehicles.length - 5} {settings.language === 'ar' ? 'أكثر' : settings.language === 'hi' ? 'अधिक' : 'more'}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </details>
+                                </div>
+                              )}
+                            </div>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                    
+                    <div className={`flex items-center gap-2 text-xs text-muted-foreground ${rtl ? 'flex-row-reverse' : ''}`}>
+                      <span>
+                        {settings.language === 'ar' 
+                          ? 'ℹ️ سيتم إرسال هذه الرسائل تلقائيًا في الأوقات المحددة'
+                          : settings.language === 'hi'
+                          ? 'ℹ️ ये SMS निर्धारित समय पर स्वचालित रूप से भेजे जाएंगे'
+                          : 'ℹ️ These SMS will be sent automatically at the scheduled times'}
+                      </span>
+                    </div>
+                  </div>
+                </Card>
+              )}
+              
               {/* Send SMS per Villa */}
               <div className="space-y-3">
                 {villas.map(villa => {
