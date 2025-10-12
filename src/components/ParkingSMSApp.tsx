@@ -13,6 +13,7 @@ import { Car, Send, Crown, Globe, MessageSquare, Moon, Sun, Settings, Home, Cloc
 import { LocalStorage } from '@/utils/storage';
 import { getTranslations, isRTL } from '@/utils/i18n';
 import { useToast } from '@/hooks/use-toast';
+import { SubscriptionAPI } from '@/utils/subscriptionApi';
 import type { Vehicle, AppSettings, SubscriptionStatus, Villa, AutomationSchedule } from '@/types';
 
 export function ParkingSMSApp() {
@@ -26,9 +27,9 @@ export function ParkingSMSApp() {
     automationEnabled: false
   });
   const [subscription, setSubscription] = useState<SubscriptionStatus>({
-    isActive: true,
+    isActive: false,
     type: 'trial',
-    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+    expiresAt: undefined
   });
   const [smsSheetOpen, setSmsSheetOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -53,18 +54,20 @@ export function ParkingSMSApp() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [vehiclesData, villasData, schedulesData, settingsData, subscriptionData] = await Promise.all([
+        const [vehiclesData, villasData, schedulesData, settingsData] = await Promise.all([
           LocalStorage.getVehicles(),
           LocalStorage.getVillas(),
           LocalStorage.getAutomationSchedules(),
-          LocalStorage.getSettings(),
-          LocalStorage.getSubscriptionStatus()
+          LocalStorage.getSettings()
         ]);
         
         setVehicles(vehiclesData);
         setVillas(villasData);
         setSchedules(schedulesData);
         setSettings(settingsData);
+        
+        // Load subscription status from backend
+        const subscriptionData = await SubscriptionAPI.getSubscriptionStatus();
         setSubscription(subscriptionData);
       } catch (error) {
         console.error('Error loading data:', error);
@@ -74,6 +77,21 @@ export function ParkingSMSApp() {
     };
     
     loadData();
+  }, []);
+
+  // Periodically check subscription status (every 5 minutes)
+  useEffect(() => {
+    const checkSubscription = async () => {
+      try {
+        const subscriptionData = await SubscriptionAPI.getSubscriptionStatus();
+        setSubscription(subscriptionData);
+      } catch (error) {
+        console.error('Error checking subscription:', error);
+      }
+    };
+
+    const interval = setInterval(checkSubscription, 5 * 60 * 1000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleAddVehicle = async (vehicleData: Omit<Vehicle, 'id' | 'createdAt' | 'updatedAt' | 'serialNumber'>) => {
@@ -212,7 +230,6 @@ export function ParkingSMSApp() {
 
   const handleSubscriptionUpdate = async (newSubscription: SubscriptionStatus) => {
     setSubscription(newSubscription);
-    await LocalStorage.saveSubscriptionStatus(newSubscription);
     
     toast({
       title: "Subscription Updated",
