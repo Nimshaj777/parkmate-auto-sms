@@ -283,7 +283,7 @@ export function ParkingSMSApp() {
             <div>
               <h1 className="text-xl font-bold text-foreground">{translations.appName}</h1>
               <p className="text-sm text-muted-foreground">
-                {vehicles.length} vehicles / {vehicles.length} مركبة
+                {vehicles.length} {translations.vehicles}
               </p>
             </div>
           </div>
@@ -308,6 +308,23 @@ export function ParkingSMSApp() {
               <span className="absolute -top-1 -right-1 text-[8px] bg-primary text-primary-foreground rounded-full px-1 font-bold">
                 {settings.language.toUpperCase()}
               </span>
+            </Button>
+            <Button
+              onClick={async () => {
+                if (confirm('Clear all data and start fresh? This cannot be undone.')) {
+                  await LocalStorage.saveVehicles([]);
+                  await LocalStorage.saveVillas([]);
+                  setVehicles([]);
+                  setVillas([]);
+                  toast({ title: "Data Cleared", description: "All vehicles and villas removed" });
+                }
+              }}
+              variant="outline"
+              size="icon"
+              className="h-10 w-10"
+              title="Clear All Data"
+            >
+              <Settings className="h-4 w-4" />
             </Button>
             {!canUsePremiumFeatures && (
               <Badge variant="destructive" className="text-xs">
@@ -349,7 +366,7 @@ export function ParkingSMSApp() {
             <div className={`flex items-center justify-between ${rtl ? 'flex-row-reverse' : ''}`}>
               <h2 className="text-lg font-semibold text-foreground">{translations.vehicles}</h2>
               <Badge variant="secondary">
-                {vehicles.length} vehicles
+                {vehicles.length} {translations.vehicles.toLowerCase()}
               </Badge>
             </div>
             
