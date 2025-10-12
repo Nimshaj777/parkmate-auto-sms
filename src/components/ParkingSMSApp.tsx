@@ -507,10 +507,10 @@ export function ParkingSMSApp() {
                 variant="default"
                 size="lg"
                 className="w-full"
-                disabled={vehicles.length === 0}
+                disabled={pendingCount === 0}
               >
                 <Send className="h-5 w-5" />
-                {translations.sendAll} ({pendingCount})
+                Send All SMS to All Villas ({pendingCount}) / إرسال الكل لجميع الفلل
               </Button>
               
               {!canUsePremiumFeatures && (

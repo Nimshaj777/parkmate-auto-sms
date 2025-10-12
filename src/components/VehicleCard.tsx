@@ -122,11 +122,22 @@ export function VehicleCard({ vehicle, onUpdate, onDelete, isRTL }: VehicleCardP
             </div>
             
             <div className={`flex gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+              {(vehicle.status === 'pending' || vehicle.status === 'failed') && (
+                <Button
+                  onClick={() => onUpdate(vehicle.id, { status: 'sent', lastSent: new Date() })}
+                  size="sm"
+                  variant="default"
+                  className="flex-1"
+                >
+                  <MessageSquare className="h-4 w-4" />
+                  Send / إرسال
+                </Button>
+              )}
               <Button
                 onClick={() => setIsEditing(true)}
                 size="sm"
                 variant="outline"
-                className="flex-1"
+                className={vehicle.status === 'pending' || vehicle.status === 'failed' ? '' : 'flex-1'}
               >
                 <Edit3 className="h-4 w-4" />
                 Edit / تعديل
@@ -135,7 +146,7 @@ export function VehicleCard({ vehicle, onUpdate, onDelete, isRTL }: VehicleCardP
                 onClick={() => onDelete(vehicle.id)}
                 size="sm"
                 variant="destructive"
-                className="flex-1"
+                className={vehicle.status === 'pending' || vehicle.status === 'failed' ? '' : 'flex-1'}
               >
                 <Trash2 className="h-4 w-4" />
                 Delete / حذف

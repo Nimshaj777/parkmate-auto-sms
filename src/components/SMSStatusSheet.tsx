@@ -31,13 +31,16 @@ export function SMSStatusSheet({
     setProgress(0);
     setResults([]);
     
-    const vehiclesToSend = vehicles.filter(v => v.status !== 'sent');
+    // Filter ALL pending/failed vehicles across ALL villas
+    const vehiclesToSend = vehicles.filter(v => v.status === 'pending' || v.status === 'failed');
     const totalVehicles = vehiclesToSend.length;
     
     if (totalVehicles === 0) {
       setSending(false);
       return;
     }
+
+    console.log(`Starting batch SMS send for ${totalVehicles} vehicles across all villas`);
 
     // Send all SMS in parallel
     const sendPromises = vehiclesToSend.map(async (vehicle, index) => {
@@ -69,6 +72,9 @@ export function SMSStatusSheet({
 
     // Wait for all SMS to complete
     await Promise.all(sendPromises);
+    
+    const successCount = results.filter(r => r.status === 'sent').length;
+    console.log(`Batch SMS complete: ${successCount}/${totalVehicles} sent successfully`);
     
     setSending(false);
     setCurrentVehicle(null);
@@ -124,7 +130,7 @@ export function SMSStatusSheet({
               disabled={vehicles.length === 0}
             >
               <Send className="h-5 w-5" />
-              Send All SMS ({pendingCount}) / إرسال جميع الرسائل
+              Send All SMS to All Villas ({pendingCount}) / إرسال جميع الرسائل لجميع الفلل
             </Button>
           )}
           
@@ -137,7 +143,7 @@ export function SMSStatusSheet({
               </div>
               <Progress value={progress} className="h-2" />
               <p className="text-sm text-muted-foreground text-center">
-                Sending to all {vehicles.filter(v => v.status !== 'sent').length} vehicles together / إرسال إلى جميع المركبات معًا
+                Sending to all {vehicles.filter(v => v.status === 'pending' || v.status === 'failed').length} vehicles across all villas simultaneously / إرسال إلى جميع المركبات في جميع الفلل في وقت واحد
               </p>
             </div>
           )}
