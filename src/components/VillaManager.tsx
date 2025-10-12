@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel } from '@/components/ui/alert-dialog';
 import { Home, Plus, Edit, Trash2 } from 'lucide-react';
 import type { Villa } from '@/types';
 
@@ -23,11 +24,33 @@ export function VillaManager({ villas, onAdd, onUpdate, onDelete, isRTL, villaLi
   const [editingVilla, setEditingVilla] = useState<Villa | null>(null);
   const [villaName, setVillaName] = useState('');
   const [smsNumber, setSmsNumber] = useState('3009');
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
 
   const t = {
-    en: { villas: 'Villas', villasUsed: 'villas used', addVilla: 'Add Villa', addNewVilla: 'Add New Villa', villaName: 'Villa Name', defaultNumber: 'Default SMS Number', add: 'Add', cancel: 'Cancel', save: 'Save', sms: 'SMS' },
-    ar: { villas: 'الفيلات', villasUsed: 'فيلا مستخدمة', addVilla: 'إضافة فيلا', addNewVilla: 'إضافة فيلا جديدة', villaName: 'اسم الفيلا', defaultNumber: 'الرقم الافتراضي', add: 'إضافة', cancel: 'إلغاء', save: 'حفظ', sms: 'رسالة' },
-    hi: { villas: 'विला', villasUsed: 'विला उपयोग में', addVilla: 'विला जोड़ें', addNewVilla: 'नया विला जोड़ें', villaName: 'विला का नाम', defaultNumber: 'डिफ़ॉल्ट SMS नंबर', add: 'जोड़ें', cancel: 'रद्द करें', save: 'सहेजें', sms: 'SMS' }
+    en: { 
+      villas: 'Villas', villasUsed: 'villas used', addVilla: 'Add Villa', addNewVilla: 'Add New Villa', 
+      villaName: 'Villa Name', defaultNumber: 'Default SMS Number', add: 'Add', cancel: 'Cancel', save: 'Save', sms: 'SMS',
+      upgradeTitle: 'Villa Limit Reached',
+      upgradeMessage: `You have reached your villa limit of ${villaLimit}. To add more villas, please upgrade your subscription.`,
+      upgradeButton: 'Upgrade Subscription',
+      close: 'Close'
+    },
+    ar: { 
+      villas: 'الفيلات', villasUsed: 'فيلا مستخدمة', addVilla: 'إضافة فيلا', addNewVilla: 'إضافة فيلا جديدة', 
+      villaName: 'اسم الفيلا', defaultNumber: 'الرقم الافتراضي', add: 'إضافة', cancel: 'إلغاء', save: 'حفظ', sms: 'رسالة',
+      upgradeTitle: 'تم الوصول إلى حد الفيلا',
+      upgradeMessage: `لقد وصلت إلى الحد الأقصى للفيلات وهو ${villaLimit}. لإضافة المزيد من الفيلات، يرجى ترقية اشتراكك.`,
+      upgradeButton: 'ترقية الاشتراك',
+      close: 'إغلاق'
+    },
+    hi: { 
+      villas: 'विला', villasUsed: 'विला उपयोग में', addVilla: 'विला जोड़ें', addNewVilla: 'नया विला जोड़ें', 
+      villaName: 'विला का नाम', defaultNumber: 'डिफ़ॉल्ट SMS नंबर', add: 'जोड़ें', cancel: 'रद्द करें', save: 'सहेजें', sms: 'SMS',
+      upgradeTitle: 'विला सीमा पूर्ण',
+      upgradeMessage: `आप ${villaLimit} विला की सीमा तक पहुंच गए हैं। अधिक विला जोड़ने के लिए, कृपया अपनी सदस्यता अपग्रेड करें।`,
+      upgradeButton: 'सदस्यता अपग्रेड करें',
+      close: 'बंद करें'
+    }
   };
   const text = t[language];
 
@@ -38,7 +61,8 @@ export function VillaManager({ villas, onAdd, onUpdate, onDelete, isRTL, villaLi
     if (!villaName.trim() || !smsNumber.trim()) return;
 
     if (!canAddVilla) {
-      alert(`Villa limit reached! Your subscription allows ${villaLimit} villa(s). Please upgrade to add more.`);
+      setShowAddDialog(false);
+      setShowUpgradeDialog(true);
       return;
     }
 
@@ -89,7 +113,7 @@ export function VillaManager({ villas, onAdd, onUpdate, onDelete, isRTL, villaLi
         </div>
         <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
           <DialogTrigger asChild>
-            <Button variant="outline" size="sm" disabled={!canAddVilla}>
+            <Button variant="outline" size="sm">
               <Plus className="h-4 w-4" />
               {text.addVilla}
             </Button>
@@ -211,6 +235,28 @@ export function VillaManager({ villas, onAdd, onUpdate, onDelete, isRTL, villaLi
           </Card>
         ))}
       </div>
+
+      <AlertDialog open={showUpgradeDialog} onOpenChange={setShowUpgradeDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{text.upgradeTitle}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {text.upgradeMessage}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{text.close}</AlertDialogCancel>
+            <Button onClick={() => {
+              setShowUpgradeDialog(false);
+              // Navigate to Subscription tab to upgrade
+              const subscriptionTab = document.querySelector('[value="subscription"]') as HTMLElement;
+              if (subscriptionTab) subscriptionTab.click();
+            }}>
+              {text.upgradeButton}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
