@@ -213,21 +213,42 @@ export function ParkingSMSApp() {
   };
 
   const handleCreateSchedule = async (scheduleData: Omit<AutomationSchedule, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const newSchedule: AutomationSchedule = {
-      ...scheduleData,
-      id: Date.now().toString(),
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
+    // Check if schedule already exists for this villa
+    const existingScheduleIndex = schedules.findIndex(s => s.villaId === scheduleData.villaId);
     
-    const updatedSchedules = [...schedules, newSchedule];
+    let updatedSchedules: AutomationSchedule[];
+    
+    if (existingScheduleIndex >= 0) {
+      // Update existing schedule instead of creating duplicate
+      updatedSchedules = schedules.map((s, idx) => 
+        idx === existingScheduleIndex 
+          ? { ...s, ...scheduleData, updatedAt: new Date() }
+          : s
+      );
+      
+      toast({
+        title: "Schedule Updated",
+        description: "Automation schedule has been updated."
+      });
+    } else {
+      // Create new schedule
+      const newSchedule: AutomationSchedule = {
+        ...scheduleData,
+        id: Date.now().toString(),
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      
+      updatedSchedules = [...schedules, newSchedule];
+      
+      toast({
+        title: "Schedule Created",
+        description: "Automation schedule has been created."
+      });
+    }
+    
     setSchedules(updatedSchedules);
     await LocalStorage.saveAutomationSchedules(updatedSchedules);
-    
-    toast({
-      title: "Schedule Created",
-      description: "Automation schedule has been created."
-    });
   };
 
   const handleLanguageSwitch = async () => {

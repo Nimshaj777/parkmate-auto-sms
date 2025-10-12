@@ -253,6 +253,15 @@ export function AutomationSettings({
             <div className="space-y-3">
               {schedules.map(schedule => {
                 const villa = villas.find(v => v.id === schedule.villaId);
+                
+                // Debug logging
+                if (!villa) {
+                  console.log('Villa not found for schedule:', {
+                    scheduleVillaId: schedule.villaId,
+                    availableVillas: villas.map(v => ({ id: v.id, name: v.name }))
+                  });
+                }
+                
                 const activeDays = DAYS_OF_WEEK.filter((_, index) => schedule.daysOfWeek[index]);
                 const hasActiveSubscription = villaSubscriptions.some(
                   sub => sub.villaId === schedule.villaId && sub.isActive && new Date(sub.expiresAt) > new Date()
