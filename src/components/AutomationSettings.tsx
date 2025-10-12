@@ -3,10 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Clock, Calendar, Bell, Play } from 'lucide-react';
+import { TimePicker } from '@/components/ui/time-picker';
+import { format24To12Hour } from '@/utils/timeFormat';
 import type { Villa, AutomationSchedule } from '@/types';
 
 interface AutomationSettingsProps {
@@ -126,15 +127,11 @@ export function AutomationSettings({
 
           {/* Time Selection */}
           <div className="space-y-2">
-            <Label htmlFor="time">
-              Send Time / وقت الإرسال
-            </Label>
-            <Input
-              id="time"
-              type="time"
+            <TimePicker
               value={time}
-              onChange={(e) => setTime(e.target.value)}
-              className="w-32"
+              onChange={setTime}
+              label="Send Time / وقت الإرسال"
+              isRTL={isRTL}
             />
             <p className="text-xs text-muted-foreground">
               SMS will be sent to {currentVilla?.defaultSmsNumber || '3009'}
@@ -179,7 +176,7 @@ export function AutomationSettings({
               </div>
               {currentSchedule.lastRun && (
                 <p className="text-xs text-muted-foreground mt-1">
-                  Last run: {currentSchedule.lastRun.toLocaleString()}
+                  Last run: {currentSchedule.lastRun.toLocaleDateString()} at {format24To12Hour(currentSchedule.time)}
                 </p>
               )}
             </div>
@@ -216,7 +213,7 @@ export function AutomationSettings({
                 setIsEnabled(true);
               }}
             >
-              Weekdays 8AM
+              Weekdays 8:00 AM
             </Button>
             <Button
               variant="outline"
@@ -226,7 +223,7 @@ export function AutomationSettings({
                 setIsEnabled(true);
               }}
             >
-              Daily 9AM
+              Daily 9:00 AM
             </Button>
           </div>
         </CardContent>
