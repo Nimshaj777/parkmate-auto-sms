@@ -9,12 +9,14 @@ import { SMSStatusSheet } from '@/components/SMSStatusSheet';
 import { SubscriptionCard } from '@/components/SubscriptionCard';
 import { VillaManager } from '@/components/VillaManager';
 import { AutomationSettings } from '@/components/AutomationSettings';
+import { VillaSubscriptionList } from '@/components/VillaSubscriptionList';
 import { Car, Send, Crown, Globe, MessageSquare, Moon, Sun, Trash2, Home, Clock } from 'lucide-react';
 import { LocalStorage } from '@/utils/storage';
 import { getTranslations, isRTL } from '@/utils/i18n';
 import { useToast } from '@/hooks/use-toast';
 import { SubscriptionAPI } from '@/utils/subscriptionApi';
-import type { Vehicle, AppSettings, SubscriptionStatus, Villa, AutomationSchedule } from '@/types';
+import { VillaSubscriptionAPI } from '@/utils/villaSubscriptionApi';
+import type { Vehicle, AppSettings, SubscriptionStatus, Villa, AutomationSchedule, VillaSubscription } from '@/types';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,6 +32,7 @@ export function ParkingSMSApp() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [villas, setVillas] = useState<Villa[]>([]);
   const [schedules, setSchedules] = useState<AutomationSchedule[]>([]);
+  const [villaSubscriptions, setVillaSubscriptions] = useState<VillaSubscription[]>([]);
   const [settings, setSettings] = useState<AppSettings>({
     language: 'en',
     defaultSmsNumber: '3009',
@@ -66,17 +69,19 @@ export function ParkingSMSApp() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [vehiclesData, villasData, schedulesData, settingsData] = await Promise.all([
+        const [vehiclesData, villasData, schedulesData, settingsData, villaSubsData] = await Promise.all([
           LocalStorage.getVehicles(),
           LocalStorage.getVillas(),
           LocalStorage.getAutomationSchedules(),
-          LocalStorage.getSettings()
+          LocalStorage.getSettings(),
+          VillaSubscriptionAPI.getVillaSubscriptions()
         ]);
         
         setVehicles(vehiclesData);
         setVillas(villasData);
         setSchedules(schedulesData);
         setSettings(settingsData);
+        setVillaSubscriptions(villaSubsData);
         
         // Load subscription status from backend
         const subscriptionData = await SubscriptionAPI.getSubscriptionStatus();
@@ -281,6 +286,16 @@ export function ParkingSMSApp() {
       title: "Subscription Updated",
       description: "Your subscription has been activated successfully."
     });
+  };
+
+  const handleVillaSubscriptionUpdate = async () => {
+    // Reload villa subscriptions after activation
+    try {
+      const villaSubsData = await VillaSubscriptionAPI.getVillaSubscriptions();
+      setVillaSubscriptions(villaSubsData);
+    } catch (error) {
+      console.error('Error refreshing villa subscriptions:', error);
+    }
   };
 
   const handleSMSStatusUpdate = async (vehicleId: string, status: Vehicle['status']) => {
@@ -569,6 +584,16 @@ export function ParkingSMSApp() {
               isRTL={rtl}
               language={settings.language}
             />
+
+            {villas.length > 0 && (
+              <VillaSubscriptionList
+                villas={villas}
+                villaSubscriptions={villaSubscriptions}
+                onUpdate={handleVillaSubscriptionUpdate}
+                language={settings.language}
+                direction={rtl ? 'rtl' : 'ltr'}
+              />
+            )}
           </TabsContent>
         </Tabs>
       </main>

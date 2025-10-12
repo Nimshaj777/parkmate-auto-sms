@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.get-subscription-status]
 verify_jwt = false
+
+[functions.activate-villa-subscription]
+verify_jwt = false

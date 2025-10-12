@@ -23,6 +23,7 @@ export type Database = {
           expires_at: string | null
           id: string
           is_used: boolean
+          max_vehicles: number
           used_at: string | null
           used_by_device_id: string | null
           used_by_user_id: string | null
@@ -36,6 +37,7 @@ export type Database = {
           expires_at?: string | null
           id?: string
           is_used?: boolean
+          max_vehicles?: number
           used_at?: string | null
           used_by_device_id?: string | null
           used_by_user_id?: string | null
@@ -49,6 +51,7 @@ export type Database = {
           expires_at?: string | null
           id?: string
           is_used?: boolean
+          max_vehicles?: number
           used_at?: string | null
           used_by_device_id?: string | null
           used_by_user_id?: string | null
@@ -140,6 +143,39 @@ export type Database = {
           subscription_type?: string
           user_id?: string | null
           villa_limit?: number
+        }
+        Relationships: []
+      }
+      villa_subscriptions: {
+        Row: {
+          activated_at: string
+          activation_code: string
+          created_at: string
+          device_id: string
+          expires_at: string
+          id: string
+          is_active: boolean
+          villa_id: string
+        }
+        Insert: {
+          activated_at?: string
+          activation_code: string
+          created_at?: string
+          device_id: string
+          expires_at: string
+          id?: string
+          is_active?: boolean
+          villa_id: string
+        }
+        Update: {
+          activated_at?: string
+          activation_code?: string
+          created_at?: string
+          device_id?: string
+          expires_at?: string
+          id?: string
+          is_active?: boolean
+          villa_id?: string
         }
         Relationships: []
       }

@@ -54,12 +54,24 @@ export interface AppSettings {
   automationEnabled: boolean;
 }
 
+export interface VillaSubscription {
+  id: string;
+  villaId: string;
+  deviceId: string;
+  activationCode: string;
+  isActive: boolean;
+  activatedAt: Date;
+  expiresAt: Date;
+  createdAt: Date;
+}
+
 export interface SubscriptionStatus {
   isActive: boolean;
   type: 'google_play' | 'activation_code' | 'trial';
   expiresAt?: Date;
   activationCode?: string;
   villaLimit?: number; // Maximum number of villas allowed
+  villaSubscriptions?: VillaSubscription[]; // Per-villa subscriptions
 }
 
 export const MAX_VEHICLES_PER_VILLA = 20; // Maximum vehicles per villa
