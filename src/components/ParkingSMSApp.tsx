@@ -309,23 +309,6 @@ export function ParkingSMSApp() {
                 {settings.language.toUpperCase()}
               </span>
             </Button>
-            <Button
-              onClick={async () => {
-                if (confirm('Clear all data and start fresh? This cannot be undone.')) {
-                  await LocalStorage.saveVehicles([]);
-                  await LocalStorage.saveVillas([]);
-                  setVehicles([]);
-                  setVillas([]);
-                  toast({ title: "Data Cleared", description: "All vehicles and villas removed" });
-                }
-              }}
-              variant="outline"
-              size="icon"
-              className="h-10 w-10"
-              title="Clear All Data"
-            >
-              <Settings className="h-4 w-4" />
-            </Button>
             {!canUsePremiumFeatures && (
               <Badge variant="destructive" className="text-xs">
                 Expired
