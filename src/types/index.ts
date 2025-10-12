@@ -59,7 +59,10 @@ export interface SubscriptionStatus {
   type: 'google_play' | 'activation_code' | 'trial';
   expiresAt?: Date;
   activationCode?: string;
+  villaLimit?: number; // Maximum number of villas allowed
 }
+
+export const MAX_VEHICLES_PER_VILLA = 20; // Maximum vehicles per villa
 
 export interface SMSPreflightCheck {
   vehicleId: string;

@@ -44,11 +44,18 @@ serve(async (req) => {
       );
     }
 
-    const { duration = 30, count = 1 } = await req.json();
+    const { duration = 30, count = 1, villaCount = 1 } = await req.json();
 
     if (![30, 60, 90].includes(duration)) {
       return new Response(
         JSON.stringify({ error: 'Invalid duration. Must be 30, 60, or 90 days' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (villaCount < 1 || villaCount > 10) {
+      return new Response(
+        JSON.stringify({ error: 'Villa count must be between 1 and 10' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -85,6 +92,7 @@ serve(async (req) => {
           codeRecords.push({
             code,
             duration,
+            villa_count: villaCount,
             created_by: user.id,
             is_used: false
           });
@@ -106,7 +114,7 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ codes, duration, count }),
+      JSON.stringify({ codes, duration, count, villaCount }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 

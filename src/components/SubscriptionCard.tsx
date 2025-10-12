@@ -81,9 +81,7 @@ export function SubscriptionCard({ subscription, onUpdate, isRTL }: Subscription
                 {subscription.type === 'google_play' && 'Premium / بريميوم'}
               </h3>
               <p className="text-sm text-muted-foreground">
-                {subscription.type === 'trial' && '3 day free trial / تجربة مجانية لمدة 3 أيام'}
-                {subscription.type === 'activation_code' && 'Activated with code / مُفعّل برمز'}
-                {subscription.type === 'google_play' && 'Google Play subscription / اشتراك جوجل بلاي'}
+                {subscription.villaLimit && `${subscription.villaLimit} ${subscription.villaLimit === 1 ? 'Villa' : 'Villas'} × 20 vehicles / ${subscription.villaLimit} فيلا × ٢٠ مركبة`}
               </p>
             </div>
           </div>

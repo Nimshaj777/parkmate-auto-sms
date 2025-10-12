@@ -14,17 +14,25 @@ interface VillaManagerProps {
   onUpdate: (id: string, updates: Partial<Villa>) => void;
   onDelete: (id: string) => void;
   isRTL: boolean;
+  villaLimit?: number;
 }
 
-export function VillaManager({ villas, onAdd, onUpdate, onDelete, isRTL }: VillaManagerProps) {
+export function VillaManager({ villas, onAdd, onUpdate, onDelete, isRTL, villaLimit = 1 }: VillaManagerProps) {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingVilla, setEditingVilla] = useState<Villa | null>(null);
   const [villaName, setVillaName] = useState('');
   const [smsNumber, setSmsNumber] = useState('3009');
 
+  const canAddVilla = villas.length < villaLimit;
+
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
     if (!villaName.trim() || !smsNumber.trim()) return;
+
+    if (!canAddVilla) {
+      alert(`Villa limit reached! Your subscription allows ${villaLimit} villa(s). Please upgrade to add more.`);
+      return;
+    }
 
     onAdd({
       name: villaName.trim(),
@@ -65,10 +73,15 @@ export function VillaManager({ villas, onAdd, onUpdate, onDelete, isRTL }: Villa
   return (
     <div className="space-y-4">
       <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
-        <h3 className="text-lg font-semibold">Villas / الفيلات</h3>
+        <div>
+          <h3 className="text-lg font-semibold">Villas / الفيلات</h3>
+          <p className="text-xs text-muted-foreground mt-1">
+            {villas.length} / {villaLimit} villas used
+          </p>
+        </div>
         <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
           <DialogTrigger asChild>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" disabled={!canAddVilla}>
               <Plus className="h-4 w-4" />
               Add Villa / إضافة فيلا
             </Button>

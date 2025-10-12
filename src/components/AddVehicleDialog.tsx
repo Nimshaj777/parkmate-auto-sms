@@ -11,19 +11,29 @@ interface AddVehicleDialogProps {
   onAdd: (vehicle: Omit<Vehicle, 'id' | 'createdAt' | 'updatedAt' | 'serialNumber'>) => void;
   villas: Villa[];
   isRTL: boolean;
+  vehicles: Vehicle[];
 }
 
-export function AddVehicleDialog({ onAdd, villas, isRTL }: AddVehicleDialogProps) {
+export function AddVehicleDialog({ onAdd, villas, isRTL, vehicles }: AddVehicleDialogProps) {
   const [open, setOpen] = useState(false);
   const [plateNumber, setPlateNumber] = useState('');
   const [roomName, setRoomName] = useState('');
   const [smsMessage, setSmsMessage] = useState('');
   const [selectedVilla, setSelectedVilla] = useState(villas[0]?.id || '');
 
+  const MAX_VEHICLES_PER_VILLA = 20;
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!plateNumber.trim() || !smsMessage.trim() || !roomName.trim() || !selectedVilla) return;
+    
+    // Check vehicle limit for selected villa
+    const vehiclesInVilla = vehicles.filter(v => v.villaId === selectedVilla).length;
+    if (vehiclesInVilla >= MAX_VEHICLES_PER_VILLA) {
+      alert(`Vehicle limit reached! Each villa can have maximum ${MAX_VEHICLES_PER_VILLA} vehicles. Please add another villa to continue.`);
+      return;
+    }
     
     onAdd({
       plateNumber: plateNumber.trim(),
@@ -87,11 +97,14 @@ export function AddVehicleDialog({ onAdd, villas, isRTL }: AddVehicleDialogProps
                 <SelectValue placeholder="Select villa" />
               </SelectTrigger>
               <SelectContent>
-                {villas.map(villa => (
-                  <SelectItem key={villa.id} value={villa.id}>
-                    {villa.name}
-                  </SelectItem>
-                ))}
+                {villas.map(villa => {
+                  const vehicleCount = vehicles.filter(v => v.villaId === villa.id).length;
+                  return (
+                    <SelectItem key={villa.id} value={villa.id}>
+                      {villa.name} ({vehicleCount}/{MAX_VEHICLES_PER_VILLA})
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
           </div>

@@ -105,14 +105,16 @@ export class SubscriptionAPI {
       return data.subscription || {
         isActive: false,
         type: 'trial',
-        expiresAt: undefined
+        expiresAt: undefined,
+        villaLimit: 1
       };
     } catch (error) {
       console.error('Error getting subscription status:', error);
       return {
         isActive: false,
         type: 'trial',
-        expiresAt: undefined
+        expiresAt: undefined,
+        villaLimit: 1
       };
     }
   }

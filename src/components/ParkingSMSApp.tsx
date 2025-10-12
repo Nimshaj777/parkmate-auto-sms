@@ -340,7 +340,7 @@ export function ParkingSMSApp() {
               </Badge>
             </div>
             
-            <AddVehicleDialog onAdd={handleAddVehicle} villas={villas} isRTL={rtl} />
+            <AddVehicleDialog onAdd={handleAddVehicle} villas={villas} isRTL={rtl} vehicles={vehicles} />
             
             {vehicles.length === 0 ? (
               <Card className="card-mobile text-center py-8">
@@ -400,6 +400,7 @@ export function ParkingSMSApp() {
               onUpdate={handleUpdateVilla}
               onDelete={handleDeleteVilla}
               isRTL={rtl}
+              villaLimit={subscription.villaLimit || 1}
             />
           </TabsContent>
 

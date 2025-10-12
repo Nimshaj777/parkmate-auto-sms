@@ -99,6 +99,7 @@ serve(async (req) => {
         subscription_type: 'activation_code',
         is_active: true,
         activation_code: code,
+        villa_limit: codeData.villa_count || 1,
         expires_at: expiresAt.toISOString()
       });
 
@@ -117,7 +118,8 @@ serve(async (req) => {
           isActive: true,
           type: 'activation_code',
           expiresAt: expiresAt.toISOString(),
-          activationCode: code
+          activationCode: code,
+          villaLimit: codeData.villa_count || 1
         }
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

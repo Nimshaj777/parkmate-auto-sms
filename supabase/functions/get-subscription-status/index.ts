@@ -64,7 +64,8 @@ serve(async (req) => {
           isActive: !isExpired && subscription.is_active,
           type: subscription.subscription_type,
           expiresAt: subscription.expires_at,
-          activationCode: subscription.activation_code || undefined
+          activationCode: subscription.activation_code || undefined,
+          villaLimit: subscription.villa_limit || 1
         }
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

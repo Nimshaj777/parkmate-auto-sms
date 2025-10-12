@@ -23,6 +23,7 @@ export function AdminCodeGenerator() {
   const [password, setPassword] = useState('');
   const [duration, setDuration] = useState<number>(30);
   const [count, setCount] = useState<number>(1);
+  const [villaCount, setVillaCount] = useState<number>(1);
   const [generatedCodes, setGeneratedCodes] = useState<GeneratedCode[]>([]);
   const [generating, setGenerating] = useState(false);
 
@@ -91,7 +92,7 @@ export function AdminCodeGenerator() {
 
     try {
       const { data, error } = await supabase.functions.invoke('generate-activation-code', {
-        body: { duration, count }
+        body: { duration, count, villaCount }
       });
 
       if (error) throw error;
@@ -106,7 +107,7 @@ export function AdminCodeGenerator() {
       
       toast({
         title: "Codes Generated Successfully!",
-        description: `${count} code(s) generated for ${duration} days`
+        description: `${count} code(s) generated for ${duration} days with ${villaCount} villa(s)`
       });
     } catch (error) {
       toast({
@@ -237,7 +238,7 @@ export function AdminCodeGenerator() {
         <Card className="p-6">
           <h2 className="text-xl font-semibold mb-4">Generate New Codes</h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
             <div>
               <Label>Duration</Label>
               <Select value={duration.toString()} onValueChange={(v) => setDuration(parseInt(v))}>
@@ -248,6 +249,22 @@ export function AdminCodeGenerator() {
                   <SelectItem value="30">30 Days</SelectItem>
                   <SelectItem value="60">60 Days</SelectItem>
                   <SelectItem value="90">90 Days</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <Label>Villa Count</Label>
+              <Select value={villaCount.toString()} onValueChange={(v) => setVillaCount(parseInt(v))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">1 Villa (20 cars)</SelectItem>
+                  <SelectItem value="2">2 Villas (40 cars)</SelectItem>
+                  <SelectItem value="3">3 Villas (60 cars)</SelectItem>
+                  <SelectItem value="4">4 Villas (80 cars)</SelectItem>
+                  <SelectItem value="5">5 Villas (100 cars)</SelectItem>
                 </SelectContent>
               </Select>
             </div>

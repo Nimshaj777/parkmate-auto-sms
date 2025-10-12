@@ -26,6 +26,7 @@ export type Database = {
           used_at: string | null
           used_by_device_id: string | null
           used_by_user_id: string | null
+          villa_count: number
         }
         Insert: {
           code: string
@@ -38,6 +39,7 @@ export type Database = {
           used_at?: string | null
           used_by_device_id?: string | null
           used_by_user_id?: string | null
+          villa_count?: number
         }
         Update: {
           code?: string
@@ -50,6 +52,7 @@ export type Database = {
           used_at?: string | null
           used_by_device_id?: string | null
           used_by_user_id?: string | null
+          villa_count?: number
         }
         Relationships: []
       }
@@ -112,6 +115,7 @@ export type Database = {
           started_at: string
           subscription_type: string
           user_id: string | null
+          villa_limit: number
         }
         Insert: {
           activation_code?: string | null
@@ -123,6 +127,7 @@ export type Database = {
           started_at?: string
           subscription_type: string
           user_id?: string | null
+          villa_limit?: number
         }
         Update: {
           activation_code?: string | null
@@ -134,6 +139,7 @@ export type Database = {
           started_at?: string
           subscription_type?: string
           user_id?: string | null
+          villa_limit?: number
         }
         Relationships: []
       }
