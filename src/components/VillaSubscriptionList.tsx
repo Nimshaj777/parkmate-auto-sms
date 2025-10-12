@@ -156,36 +156,35 @@ export function VillaSubscriptionList({
                 )}
               </div>
 
-              {!isActive && (
-                <div className="flex gap-2" dir={direction}>
-                  <Input
-                    placeholder={`${text.enterCode} ${villa.name}`}
-                    value={activationCodes[villa.id] || ''}
-                    onChange={(e) =>
-                      setActivationCodes((prev) => ({
-                        ...prev,
-                        [villa.id]: e.target.value.toUpperCase(),
-                      }))
-                    }
-                    className="flex-1"
-                    maxLength={10}
-                  />
-                  <Button
-                    onClick={() => handleActivate(villa)}
-                    disabled={!activationCodes[villa.id] || isActivating}
-                    className="gap-2"
-                  >
-                    {isActivating ? (
-                      <>{text.activating}</>
-                    ) : (
-                      <>
-                        <Check className="h-4 w-4" />
-                        {text.activate}
-                      </>
-                    )}
-                  </Button>
-                </div>
-              )}
+              <div className="flex gap-2" dir={direction}>
+                <Input
+                  placeholder={`${text.enterCode} ${villa.name}`}
+                  value={activationCodes[villa.id] || ''}
+                  onChange={(e) =>
+                    setActivationCodes((prev) => ({
+                      ...prev,
+                      [villa.id]: e.target.value.toUpperCase(),
+                    }))
+                  }
+                  className="flex-1"
+                  maxLength={10}
+                  disabled={isActive}
+                />
+                <Button
+                  onClick={() => handleActivate(villa)}
+                  disabled={isActive || !activationCodes[villa.id] || isActivating}
+                  className="gap-2"
+                >
+                  {isActivating ? (
+                    <>{text.activating}</>
+                  ) : (
+                    <>
+                      <Check className="h-4 w-4" />
+                      {text.activate}
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
           );
         })}
