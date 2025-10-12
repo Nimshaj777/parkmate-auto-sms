@@ -97,9 +97,46 @@ export function ParkingSMSApp() {
       }
     };
 
-    const interval = setInterval(checkVillaSubscriptions, 5 * 60 * 1000);
+  const interval = setInterval(checkVillaSubscriptions, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
+
+  // Normalize and reconcile schedules whenever villas or schedules change
+  useEffect(() => {
+    if (loading) return;
+    const villaIds = new Set(villas.map(v => v.id));
+
+    // Map unknown schedule villaIds to the single existing villa (if only one)
+    const remapped = schedules.map(s => {
+      if (!villaIds.has(s.villaId) && villas.length === 1) {
+        return { ...s, villaId: villas[0].id, updatedAt: new Date() } as AutomationSchedule;
+      }
+      return s;
+    });
+
+    // Deduplicate: keep latest per villaId
+    const byVilla = new Map<string, AutomationSchedule>();
+    for (const s of remapped) {
+      if (!villaIds.has(s.villaId)) continue; // drop schedules pointing to missing villas (when multiple)
+      const existing = byVilla.get(s.villaId);
+      if (!existing) byVilla.set(s.villaId, s);
+      else {
+        const existingTime = new Date(existing.updatedAt || existing.createdAt).getTime();
+        const currentTime = new Date(s.updatedAt || s.createdAt).getTime();
+        if (currentTime >= existingTime) byVilla.set(s.villaId, s);
+      }
+    }
+
+    const normalized = Array.from(byVilla.values());
+
+    // If anything changed, persist
+    const currentKey = JSON.stringify(schedules.map(s => ({ villaId: s.villaId, id: s.id })));
+    const nextKey = JSON.stringify(normalized.map(s => ({ villaId: s.villaId, id: s.id })));
+    if (currentKey !== nextKey) {
+      setSchedules(normalized);
+      LocalStorage.saveAutomationSchedules(normalized);
+    }
+  }, [villas, schedules, loading]);
 
   const handleAddVehicle = async (vehicleData: Omit<Vehicle, 'id' | 'createdAt' | 'updatedAt' | 'serialNumber'>) => {
     // Generate serial number based on existing vehicles in the same villa
@@ -269,20 +306,23 @@ export function ParkingSMSApp() {
 
   const handleClearAllData = async () => {
     try {
-      // Clear only vehicles and villas - preserve subscriptions and settings
-      // Note: Villa subscriptions in the database will remain intact
-      await LocalStorage.saveVehicles([]);
-      await LocalStorage.saveVillas([]);
+      // Clear vehicles, villas, and automation schedules - preserve subscriptions and settings
+      await Promise.all([
+        LocalStorage.saveVehicles([]),
+        LocalStorage.saveVillas([]),
+        LocalStorage.saveAutomationSchedules([]),
+      ]);
       setVehicles([]);
       setVillas([]);
+      setSchedules([]);
       
       toast({ 
         title: settings.language === 'ar' ? "تم مسح البيانات" : settings.language === 'hi' ? "डेटा साफ़ किया गया" : "Data Cleared", 
         description: settings.language === 'ar' 
-          ? "تم حذف المركبات والفلل. اشتراكاتك في قاعدة البيانات لا تزال آمنة. يمكنك إعادة تنشيط الفلل باستخدام نفس الأكواد."
+          ? "تم حذف المركبات والفلل وجداول الأتمتة. اشتراكاتك في قاعدة البيانات لا تزال آمنة. يمكنك إعادة تنشيط الفلل باستخدام نفس الأكواد."
           : settings.language === 'hi'
-          ? "वाहन और विला हटा दिए गए। आपकी सदस्यताएं डेटाबेस में सुरक्षित हैं। उन्हीं कोड का उपयोग करके विला को फिर से सक्रिय करें।"
-          : "Vehicles and villas cleared. Your subscriptions are safe in the database. Re-activate villas using the same codes."
+          ? "वाहन, विला और ऑटोमेशन शेड्यूल हटा दिए गए। आपकी सदस्यताएं डेटाबेस में सुरक्षित हैं। उन्हीं कोड का उपयोग करके विला को फिर से सक्रिय करें।"
+          : "Vehicles, villas and automation schedules cleared. Your subscriptions are safe in the backend. Re-activate villas using the same codes."
       });
       
       setClearDataDialog(false);
@@ -296,7 +336,6 @@ export function ParkingSMSApp() {
       });
     }
   };
-
   const handleVillaSubscriptionUpdate = async () => {
     // Reload villa subscriptions after activation
     try {

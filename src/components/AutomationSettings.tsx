@@ -250,101 +250,106 @@ export function AutomationSettings({
               <p className="text-xs mt-1">Configure a schedule above to get started</p>
             </div>
           ) : (
-            <div className="space-y-3">
-              {schedules.map(schedule => {
-                const villa = villas.find(v => v.id === schedule.villaId);
-                
-                // Debug logging
-                if (!villa) {
-                  console.log('Villa not found for schedule:', {
-                    scheduleVillaId: schedule.villaId,
-                    availableVillas: villas.map(v => ({ id: v.id, name: v.name }))
-                  });
+            	<div className="space-y-3">
+              {(() => {
+                // Deduplicate schedules by villa and ignore schedules without a matching villa
+                const unique = new Map<string, AutomationSchedule>();
+                for (const s of schedules) {
+                  const hasVilla = villas.some(v => v.id === s.villaId);
+                  if (!hasVilla) continue;
+                  const prev = unique.get(s.villaId);
+                  const prevTime = prev ? new Date(prev.updatedAt || prev.createdAt).getTime() : 0;
+                  const curTime = new Date(s.updatedAt || s.createdAt).getTime();
+                  if (!prev || curTime >= prevTime) unique.set(s.villaId, s);
                 }
-                
-                const activeDays = DAYS_OF_WEEK.filter((_, index) => schedule.daysOfWeek[index]);
-                const hasActiveSubscription = villaSubscriptions.some(
-                  sub => sub.villaId === schedule.villaId && sub.isActive && new Date(sub.expiresAt) > new Date()
-                );
-                
-                return (
-                  <div
-                    key={schedule.id}
-                    className={`p-4 rounded-lg border transition-all cursor-pointer hover:shadow-md ${
-                      schedule.enabled && hasActiveSubscription
-                        ? 'bg-primary/5 border-primary/30' 
-                        : 'bg-muted/20 border-border'
-                    }`}
-                    onClick={() => {
-                      setSelectedVilla(schedule.villaId);
-                      setTime(schedule.time);
-                      setDaysOfWeek(schedule.daysOfWeek);
-                      setIsEnabled(schedule.enabled);
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="space-y-2 flex-1">
-                        {/* Villa Name and Status */}
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <Home className="h-4 w-4 text-primary" />
-                          <span className="font-semibold text-base">{villa?.name || 'Unknown Villa'}</span>
-                          <Badge 
-                            variant={schedule.enabled && hasActiveSubscription ? "default" : "secondary"} 
-                            className="text-xs"
-                          >
-                            {schedule.enabled && hasActiveSubscription ? 'Active' : schedule.enabled ? 'No Subscription' : 'Disabled'}
-                          </Badge>
-                        </div>
-                        
-                        {/* Time and Phone */}
-                        <div className="flex items-center gap-2 text-sm">
-                          <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                          <span className="font-mono font-medium">{format24To12Hour(schedule.time)}</span>
-                          <span className="text-muted-foreground">→</span>
-                          <span className="text-muted-foreground">{villa?.defaultSmsNumber || '3009'}</span>
-                        </div>
-                        
-                        {/* Active Days */}
-                        <div className="flex flex-wrap gap-1.5">
-                          {activeDays.length > 0 ? (
-                            activeDays.map(day => (
-                              <Badge key={day.key} variant="outline" className="text-xs px-2 py-0.5">
-                                {day.short}
-                              </Badge>
-                            ))
-                          ) : (
-                            <span className="text-xs text-muted-foreground">No days selected</span>
+                const displaySchedules = Array.from(unique.values());
+
+                return displaySchedules.map((schedule) => {
+                  const villa = villas.find(v => v.id === schedule.villaId);
+                  const activeDays = DAYS_OF_WEEK.filter((_, index) => schedule.daysOfWeek[index]);
+                  const hasActiveSubscription = villaSubscriptions.some(
+                    sub => sub.villaId === schedule.villaId && sub.isActive && new Date(sub.expiresAt) > new Date()
+                  );
+
+                  return (
+                    <div
+                      key={schedule.id}
+                      className={`p-4 rounded-lg border transition-all cursor-pointer hover:shadow-md ${
+                        schedule.enabled && hasActiveSubscription
+                          ? 'bg-primary/5 border-primary/30' 
+                          : 'bg-muted/20 border-border'
+                      }`}
+                      onClick={() => {
+                        setSelectedVilla(schedule.villaId);
+                        setTime(schedule.time);
+                        setDaysOfWeek(schedule.daysOfWeek);
+                        setIsEnabled(schedule.enabled);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="space-y-2 flex-1">
+                          {/* Villa Name and Status */}
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Home className="h-4 w-4 text-primary" />
+                            <span className="font-semibold text-base">{villa?.name}</span>
+                            <Badge 
+                              variant={schedule.enabled && hasActiveSubscription ? "default" : "secondary"} 
+                              className="text-xs"
+                            >
+                              {schedule.enabled && hasActiveSubscription ? 'Active' : schedule.enabled ? 'No Subscription' : 'Disabled'}
+                            </Badge>
+                          </div>
+                          
+                          {/* Time and Phone */}
+                          <div className="flex items-center gap-2 text-sm">
+                            <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                            <span className="font-mono font-medium">{format24To12Hour(schedule.time)}</span>
+                            <span className="text-muted-foreground">→</span>
+                            <span className="text-muted-foreground">{villa?.defaultSmsNumber || '3009'}</span>
+                          </div>
+                          
+                          {/* Active Days */}
+                          <div className="flex flex-wrap gap-1.5">
+                            {activeDays.length > 0 ? (
+                              activeDays.map(day => (
+                                <Badge key={day.key} variant="outline" className="text-xs px-2 py-0.5">
+                                  {day.short}
+                                </Badge>
+                              ))
+                            ) : (
+                              <span className="text-xs text-muted-foreground">No days selected</span>
+                            )}
+                          </div>
+                          
+                          {/* Last Run Info */}
+                          {schedule.lastRun && (
+                            <p className="text-xs text-green-600 dark:text-green-400">
+                              ✓ Last sent: {new Date(schedule.lastRun).toLocaleDateString()} at {new Date(schedule.lastRun).toLocaleTimeString()}
+                            </p>
                           )}
                         </div>
                         
-                        {/* Last Run Info */}
-                        {schedule.lastRun && (
-                          <p className="text-xs text-green-600 dark:text-green-400">
-                            ✓ Last sent: {new Date(schedule.lastRun).toLocaleDateString()} at {new Date(schedule.lastRun).toLocaleTimeString()}
-                          </p>
-                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="shrink-0"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedVilla(schedule.villaId);
+                            setTime(schedule.time);
+                            setDaysOfWeek(schedule.daysOfWeek);
+                            setIsEnabled(schedule.enabled);
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                          }}
+                        >
+                          Edit
+                        </Button>
                       </div>
-                      
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="shrink-0"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedVilla(schedule.villaId);
-                          setTime(schedule.time);
-                          setDaysOfWeek(schedule.daysOfWeek);
-                          setIsEnabled(schedule.enabled);
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
-                        }}
-                      >
-                        Edit
-                      </Button>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                });
+              })()}
             </div>
           )}
         </CardContent>
