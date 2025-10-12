@@ -32,7 +32,7 @@ serve(async (req) => {
           success: false, 
           error: 'Missing required fields: code, deviceId, or villaId' 
         }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
       );
     }
 
@@ -44,7 +44,7 @@ serve(async (req) => {
           success: false, 
           error: 'Invalid activation code format' 
         }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
       );
     }
 
@@ -74,7 +74,7 @@ serve(async (req) => {
           error: 'This villa already has an active subscription',
           message: `Expires on ${new Date(existingVillaSub.expires_at).toLocaleDateString()}`
         }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
       );
     }
 
@@ -92,7 +92,7 @@ serve(async (req) => {
           success: false, 
           error: 'Invalid activation code' 
         }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
       );
     }
 
@@ -105,7 +105,7 @@ serve(async (req) => {
             success: false, 
             error: 'This activation code has already been used by another device' 
           }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
         );
       }
 
@@ -121,7 +121,7 @@ serve(async (req) => {
               success: false, 
               error: 'This activation code has expired (30 days from first use)' 
             }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
           );
         }
       }
@@ -158,7 +158,7 @@ serve(async (req) => {
               success: false, 
               error: `This activation code can only activate ${villaCount} villa(s). Limit reached.` 
             }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
           );
         }
 
@@ -174,7 +174,7 @@ serve(async (req) => {
               success: false, 
               error: `This activation code can only activate ${villaCount} villa(s). Limit reached.` 
             }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
           );
         }
 
@@ -200,7 +200,7 @@ serve(async (req) => {
           success: false, 
           error: 'This activation code has expired' 
         }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
       );
     }
 
