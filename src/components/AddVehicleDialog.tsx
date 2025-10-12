@@ -15,9 +15,10 @@ interface AddVehicleDialogProps {
   language: 'en' | 'ar' | 'hi';
   hasActiveSubscription: boolean;
   onSubscriptionRequired: () => void;
+  villaSubscriptions: import('@/types').VillaSubscription[];
 }
 
-export function AddVehicleDialog({ onAdd, villas, isRTL, vehicles, language, hasActiveSubscription, onSubscriptionRequired }: AddVehicleDialogProps) {
+export function AddVehicleDialog({ onAdd, villas, isRTL, vehicles, language, hasActiveSubscription, onSubscriptionRequired, villaSubscriptions }: AddVehicleDialogProps) {
   const [open, setOpen] = useState(false);
   const [plateNumber, setPlateNumber] = useState('');
   const [roomName, setRoomName] = useState('');
@@ -36,8 +37,12 @@ export function AddVehicleDialog({ onAdd, villas, isRTL, vehicles, language, has
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Check subscription first
-    if (!hasActiveSubscription) {
+    // Check if THIS SPECIFIC villa has an active subscription
+    const villaSubscription = villaSubscriptions.find(
+      sub => sub.villaId === selectedVilla && sub.isActive && new Date(sub.expiresAt) > new Date()
+    );
+    
+    if (!villaSubscription) {
       alert(text.activateFirst);
       setOpen(false);
       onSubscriptionRequired();

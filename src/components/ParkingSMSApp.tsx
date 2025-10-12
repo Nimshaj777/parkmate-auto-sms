@@ -403,6 +403,7 @@ export function ParkingSMSApp() {
               vehicles={vehicles} 
               language={settings.language}
               hasActiveSubscription={canUsePremiumFeatures}
+              villaSubscriptions={villaSubscriptions}
               onSubscriptionRequired={() => {
                 const tabsList = document.querySelector('[role="tablist"]');
                 const activateTab = tabsList?.querySelector('[value="subscription"]') as HTMLElement;
@@ -577,6 +578,7 @@ export function ParkingSMSApp() {
               onCreateSchedule={handleCreateSchedule}
               isRTL={rtl}
               hasActiveSubscription={canUsePremiumFeatures}
+              villaSubscriptions={villaSubscriptions}
               onSubscriptionRequired={() => {
                 const tabsList = document.querySelector('[role="tablist"]');
                 const activateTab = tabsList?.querySelector('[value="subscription"]') as HTMLElement;

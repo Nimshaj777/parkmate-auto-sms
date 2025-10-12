@@ -18,6 +18,7 @@ interface AutomationSettingsProps {
   isRTL: boolean;
   hasActiveSubscription: boolean;
   onSubscriptionRequired: () => void;
+  villaSubscriptions: import('@/types').VillaSubscription[];
 }
 
 const DAYS_OF_WEEK = [
@@ -37,7 +38,8 @@ export function AutomationSettings({
   onCreateSchedule, 
   isRTL,
   hasActiveSubscription,
-  onSubscriptionRequired
+  onSubscriptionRequired,
+  villaSubscriptions
 }: AutomationSettingsProps) {
   const [selectedVilla, setSelectedVilla] = useState(villas[0]?.id || '');
   const [time, setTime] = useState('08:00');
@@ -59,8 +61,12 @@ export function AutomationSettings({
   }, [currentSchedule, selectedVilla]);
 
   const handleSave = () => {
-    // Check subscription first
-    if (!hasActiveSubscription) {
+    // Check if THIS SPECIFIC villa has an active subscription
+    const villaSubscription = villaSubscriptions.find(
+      sub => sub.villaId === selectedVilla && sub.isActive && new Date(sub.expiresAt) > new Date()
+    );
+    
+    if (!villaSubscription) {
       alert('Please activate your subscription first to use automation. Go to the Activate tab to enter your activation code.');
       onSubscriptionRequired();
       return;
@@ -92,6 +98,11 @@ export function AutomationSettings({
 
   const selectedDaysCount = daysOfWeek.filter(Boolean).length;
   const currentVilla = villas.find(v => v.id === selectedVilla);
+  
+  // Check if current villa has active subscription
+  const currentVillaHasSubscription = villaSubscriptions.some(
+    sub => sub.villaId === selectedVilla && sub.isActive && new Date(sub.expiresAt) > new Date()
+  );
 
   return (
     <div className="space-y-6">
@@ -121,10 +132,10 @@ export function AutomationSettings({
           </div>
 
           {/* Subscription Warning */}
-          {!hasActiveSubscription && (
+          {!currentVillaHasSubscription && (
             <div className="p-4 bg-destructive/10 border border-destructive rounded-lg">
               <p className="text-sm text-destructive font-medium">
-                ⚠️ Subscription Required: Please activate your subscription to use automation features.
+                ⚠️ Subscription Required: This villa needs an active subscription. Go to Activate tab to activate it.
               </p>
             </div>
           )}
@@ -142,14 +153,14 @@ export function AutomationSettings({
             <Switch
               checked={isEnabled}
               onCheckedChange={(checked) => {
-                if (!hasActiveSubscription) {
-                  alert('Please activate your subscription first');
+                if (!currentVillaHasSubscription) {
+                  alert('Please activate this villa first');
                   onSubscriptionRequired();
                   return;
                 }
                 setIsEnabled(checked);
               }}
-              disabled={!hasActiveSubscription}
+              disabled={!currentVillaHasSubscription}
             />
           </div>
 
@@ -215,7 +226,7 @@ export function AutomationSettings({
             onClick={handleSave} 
             className="w-full" 
             size="lg"
-            disabled={!selectedVilla || !hasActiveSubscription}
+            disabled={!selectedVilla || !currentVillaHasSubscription}
           >
             <Play className="h-4 w-4" />
             Save Automation / حفظ الأتمتة
