@@ -9,9 +9,10 @@ import { toast } from "sonner";
 
 interface UsedCode {
   code: string;
-  duration: number;
-  used_at: string;
-  villa_count: number;
+  duration?: number;
+  used_at?: string;
+  villa_count?: number;
+  source: 'activation' | 'subscription';
 }
 
 export function PreviouslyUsedCodes() {
@@ -35,7 +36,25 @@ export function PreviouslyUsedCodes() {
         .order('used_at', { ascending: false });
 
       if (error) throw error;
-      setCodes(data || []);
+
+      const activationList: UsedCode[] = (data || []).map((d) => ({
+        code: d.code,
+        duration: d.duration,
+        used_at: d.used_at,
+        villa_count: d.villa_count,
+        source: 'activation',
+      }));
+
+      // Also load from current device's villa subscriptions as a fallback
+      const subs = await VillaSubscriptionAPI.getVillaSubscriptions();
+      const subList: UsedCode[] = subs.map((s) => ({
+        code: s.activationCode,
+        used_at: s.activatedAt?.toISOString?.() || undefined,
+        villa_count: 1,
+        source: 'subscription',
+      }));
+
+      setCodes([...activationList, ...subList]);
     } catch (error) {
       console.error('Error loading previously used codes:', error);
     } finally {
@@ -59,7 +78,22 @@ export function PreviouslyUsedCodes() {
   }
 
   if (codes.length === 0) {
-    return null;
+    return (
+      <Card className="p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <History className="h-5 w-5 text-primary" />
+            <h3 className="text-lg font-semibold">Your Previously Used Codes</h3>
+          </div>
+          <Button onClick={loadPreviouslyUsedCodes} variant="outline" size="sm">
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          No codes found for this device. If you activated on another device (e.g., your phone), open the app there or paste the code here to reactivate.
+        </p>
+      </Card>
+    );
   }
 
   return (
@@ -101,8 +135,13 @@ export function PreviouslyUsedCodes() {
                 </Button>
               </div>
               <div className="flex gap-2 mt-1 flex-wrap">
-                <Badge variant="secondary" className="text-xs">{item.duration} days</Badge>
-                <Badge variant="outline" className="text-xs">{item.villa_count} villa(s)</Badge>
+                <Badge variant="outline" className="text-xs capitalize">{item.source}</Badge>
+                {typeof item.duration === 'number' && (
+                  <Badge variant="secondary" className="text-xs">{item.duration} days</Badge>
+                )}
+                {typeof item.villa_count === 'number' && (
+                  <Badge variant="outline" className="text-xs">{item.villa_count} villa(s)</Badge>
+                )}
                 {item.used_at && (
                   <span className="text-xs text-muted-foreground">
                     Activated: {new Date(item.used_at).toLocaleDateString()}
