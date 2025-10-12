@@ -150,43 +150,11 @@ serve(async (req) => {
       
       // If this villa is already activated, allow reactivation (extension)
       if (!uniqueVillas.has(villaId) && uniqueVillas.size >= villaCount) {
-        // Auto-transfer: allow moving the existing activation on this device/code to the new villa
-        const activationToTransfer = existingActivations?.[0];
-        if (!activationToTransfer) {
-          return new Response(
-            JSON.stringify({ 
-              success: false, 
-              error: `This activation code can only activate ${villaCount} villa(s). Limit reached.` 
-            }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
-          );
-        }
-
-        const { error: transferError } = await supabaseAdmin
-          .from('villa_subscriptions')
-          .update({ villa_id: villaId })
-          .eq('id', activationToTransfer.id);
-
-        if (transferError) {
-          console.error('Error transferring activation to new villa:', transferError);
-          return new Response(
-            JSON.stringify({ 
-              success: false, 
-              error: `This activation code can only activate ${villaCount} villa(s). Limit reached.` 
-            }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
-          );
-        }
-
+        // Do NOT transfer subscriptions between villas. Enforce per-code villa limit strictly.
         return new Response(
           JSON.stringify({ 
-            success: true,
-            message: 'Subscription moved to this villa on the same device',
-            subscription: {
-              villaId,
-              isActive: true,
-              expiresAt: activationToTransfer.expires_at,
-            }
+            success: false, 
+            error: `This activation code can only activate ${villaCount} villa(s) and is already assigned to another villa on this device.` 
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
         );
