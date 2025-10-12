@@ -49,7 +49,7 @@ serve(async (req) => {
     }
 
     // Check if villa already has an active subscription
-    const { data: existingVillaSub, error: existingSubError } = await supabase
+    const { data: existingVillaSub, error: existingSubError } = await supabaseAdmin
       .from('villa_subscriptions')
       .select('*')
       .eq('villa_id', villaId)
@@ -129,7 +129,7 @@ serve(async (req) => {
       const newExpiry = currentExpiry > new Date() ? currentExpiry : new Date();
       newExpiry.setDate(newExpiry.getDate() + duration);
 
-      const { error: updateError } = await supabase
+      const { error: updateError } = await supabaseAdmin
         .from('villa_subscriptions')
         .update({
           activation_code: code,
@@ -174,7 +174,7 @@ serve(async (req) => {
     }
 
     // Create new villa subscription
-    const { error: insertError } = await supabase
+    const { error: insertError } = await supabaseAdmin
       .from('villa_subscriptions')
       .insert({
         villa_id: villaId,
