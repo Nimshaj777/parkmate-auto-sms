@@ -13,9 +13,11 @@ interface AddVehicleDialogProps {
   isRTL: boolean;
   vehicles: Vehicle[];
   language: 'en' | 'ar' | 'hi';
+  hasActiveSubscription: boolean;
+  onSubscriptionRequired: () => void;
 }
 
-export function AddVehicleDialog({ onAdd, villas, isRTL, vehicles, language }: AddVehicleDialogProps) {
+export function AddVehicleDialog({ onAdd, villas, isRTL, vehicles, language, hasActiveSubscription, onSubscriptionRequired }: AddVehicleDialogProps) {
   const [open, setOpen] = useState(false);
   const [plateNumber, setPlateNumber] = useState('');
   const [roomName, setRoomName] = useState('');
@@ -23,9 +25,9 @@ export function AddVehicleDialog({ onAdd, villas, isRTL, vehicles, language }: A
   const [selectedVilla, setSelectedVilla] = useState(villas[0]?.id || '');
 
   const t = {
-    en: { addVehicle: 'Add Vehicle', addNewVehicle: 'Add New Vehicle', villa: 'Villa', plateNumber: 'Plate Number', enterPlate: 'Enter your vehicle\'s plate number', roomFlat: 'Room/Flat Name', enterRoom: 'Enter room/flat identifier', smsMessage: 'SMS Message', messageFormat: 'Message format for government number', add: 'Add', cancel: 'Cancel', limitReached: 'Vehicle limit reached! Each villa can have maximum 20 vehicles. Please add another villa to continue.' },
-    ar: { addVehicle: 'إضافة مركبة', addNewVehicle: 'إضافة مركبة جديدة', villa: 'الفيلا', plateNumber: 'رقم اللوحة', enterPlate: 'أدخل رقم لوحة مركبتك', roomFlat: 'اسم الغرفة/الشقة', enterRoom: 'أدخل معرف الغرفة/الشقة', smsMessage: 'رسالة SMS', messageFormat: 'تنسيق الرسالة للرقم الحكومي', add: 'إضافة', cancel: 'إلغاء', limitReached: 'تم الوصول إلى الحد الأقصى! كل فيلا يمكن أن تحتوي على 20 مركبة كحد أقصى. يرجى إضافة فيلا أخرى للمتابعة.' },
-    hi: { addVehicle: 'वाहन जोड़ें', addNewVehicle: 'नया वाहन जोड़ें', villa: 'विला', plateNumber: 'नंबर प्लेट', enterPlate: 'अपने वाहन की नंबर प्लेट दर्ज करें', roomFlat: 'कमरा/फ्लैट का नाम', enterRoom: 'कमरा/फ्लैट पहचानकर्ता दर्ज करें', smsMessage: 'SMS संदेश', messageFormat: 'सरकारी नंबर के लिए संदेश प्रारूप', add: 'जोड़ें', cancel: 'रद्द करें', limitReached: 'वाहन सीमा पूरी हो गई! प्रत्येक विला में अधिकतम 20 वाहन हो सकते हैं। जारी रखने के लिए कृपया दूसरा विला जोड़ें।' }
+    en: { addVehicle: 'Add Vehicle', addNewVehicle: 'Add New Vehicle', villa: 'Villa', plateNumber: 'Plate Number', enterPlate: 'Enter your vehicle\'s plate number', roomFlat: 'Room/Flat Name', enterRoom: 'Enter room/flat identifier', smsMessage: 'SMS Message', messageFormat: 'Message format for government number', add: 'Add', cancel: 'Cancel', limitReached: 'Vehicle limit reached! Each villa can have maximum 20 vehicles. Please add another villa to continue.', subscriptionRequired: 'Subscription Required', activateFirst: 'Please activate your subscription first to add vehicles. Go to the Activate tab to enter your activation code.' },
+    ar: { addVehicle: 'إضافة مركبة', addNewVehicle: 'إضافة مركبة جديدة', villa: 'الفيلا', plateNumber: 'رقم اللوحة', enterPlate: 'أدخل رقم لوحة مركبتك', roomFlat: 'اسم الغرفة/الشقة', enterRoom: 'أدخل معرف الغرفة/الشقة', smsMessage: 'رسالة SMS', messageFormat: 'تنسيق الرسالة للرقم الحكومي', add: 'إضافة', cancel: 'إلغاء', limitReached: 'تم الوصول إلى الحد الأقصى! كل فيلا يمكن أن تحتوي على 20 مركبة كحد أقصى. يرجى إضافة فيلا أخرى للمتابعة.', subscriptionRequired: 'الاشتراك مطلوب', activateFirst: 'يرجى تفعيل اشتراكك أولاً لإضافة المركبات. انتقل إلى علامة تبويب التفعيل لإدخال رمز التفعيل الخاص بك.' },
+    hi: { addVehicle: 'वाहन जोड़ें', addNewVehicle: 'नया वाहन जोड़ें', villa: 'विला', plateNumber: 'नंबर प्लेट', enterPlate: 'अपने वाहन की नंबर प्लेट दर्ज करें', roomFlat: 'कमरा/फ्लैट का नाम', enterRoom: 'कमरा/फ्लैट पहचानकर्ता दर्ज करें', smsMessage: 'SMS संदेश', messageFormat: 'सरकारी नंबर के लिए संदेश प्रारूप', add: 'जोड़ें', cancel: 'रद्द करें', limitReached: 'वाहन सीमा पूरी हो गई! प्रत्येक विला में अधिकतम 20 वाहन हो सकते हैं। जारी रखने के लिए कृपया दूसरा विला जोड़ें।', subscriptionRequired: 'सदस्यता आवश्यक', activateFirst: 'वाहन जोड़ने के लिए कृपया पहले अपनी सदस्यता सक्रिय करें। सक्रियण कोड दर्ज करने के लिए सक्रिय करें टैब पर जाएं।' }
   };
   const text = t[language];
 
@@ -33,6 +35,14 @@ export function AddVehicleDialog({ onAdd, villas, isRTL, vehicles, language }: A
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Check subscription first
+    if (!hasActiveSubscription) {
+      alert(text.activateFirst);
+      setOpen(false);
+      onSubscriptionRequired();
+      return;
+    }
     
     if (!plateNumber.trim() || !smsMessage.trim() || !roomName.trim() || !selectedVilla) return;
     

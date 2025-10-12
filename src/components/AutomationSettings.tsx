@@ -16,6 +16,8 @@ interface AutomationSettingsProps {
   onUpdateSchedule: (schedule: AutomationSchedule) => void;
   onCreateSchedule: (schedule: Omit<AutomationSchedule, 'id' | 'createdAt' | 'updatedAt'>) => void;
   isRTL: boolean;
+  hasActiveSubscription: boolean;
+  onSubscriptionRequired: () => void;
 }
 
 const DAYS_OF_WEEK = [
@@ -33,7 +35,9 @@ export function AutomationSettings({
   schedules, 
   onUpdateSchedule, 
   onCreateSchedule, 
-  isRTL 
+  isRTL,
+  hasActiveSubscription,
+  onSubscriptionRequired
 }: AutomationSettingsProps) {
   const [selectedVilla, setSelectedVilla] = useState(villas[0]?.id || '');
   const [time, setTime] = useState('08:00');
@@ -55,6 +59,13 @@ export function AutomationSettings({
   }, [currentSchedule, selectedVilla]);
 
   const handleSave = () => {
+    // Check subscription first
+    if (!hasActiveSubscription) {
+      alert('Please activate your subscription first to use automation. Go to the Activate tab to enter your activation code.');
+      onSubscriptionRequired();
+      return;
+    }
+
     const scheduleData = {
       villaId: selectedVilla,
       enabled: isEnabled,
@@ -109,6 +120,15 @@ export function AutomationSettings({
             </Select>
           </div>
 
+          {/* Subscription Warning */}
+          {!hasActiveSubscription && (
+            <div className="p-4 bg-destructive/10 border border-destructive rounded-lg">
+              <p className="text-sm text-destructive font-medium">
+                ⚠️ Subscription Required: Please activate your subscription to use automation features.
+              </p>
+            </div>
+          )}
+
           {/* Enable/Disable */}
           <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
             <div>
@@ -121,7 +141,15 @@ export function AutomationSettings({
             </div>
             <Switch
               checked={isEnabled}
-              onCheckedChange={setIsEnabled}
+              onCheckedChange={(checked) => {
+                if (!hasActiveSubscription) {
+                  alert('Please activate your subscription first');
+                  onSubscriptionRequired();
+                  return;
+                }
+                setIsEnabled(checked);
+              }}
+              disabled={!hasActiveSubscription}
             />
           </div>
 
@@ -187,7 +215,7 @@ export function AutomationSettings({
             onClick={handleSave} 
             className="w-full" 
             size="lg"
-            disabled={!selectedVilla}
+            disabled={!selectedVilla || !hasActiveSubscription}
           >
             <Play className="h-4 w-4" />
             Save Automation / حفظ الأتمتة

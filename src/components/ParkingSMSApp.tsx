@@ -396,7 +396,19 @@ export function ParkingSMSApp() {
               </Badge>
             </div>
             
-            <AddVehicleDialog onAdd={handleAddVehicle} villas={villas} isRTL={rtl} vehicles={vehicles} language={settings.language} />
+            <AddVehicleDialog 
+              onAdd={handleAddVehicle} 
+              villas={villas} 
+              isRTL={rtl} 
+              vehicles={vehicles} 
+              language={settings.language}
+              hasActiveSubscription={canUsePremiumFeatures}
+              onSubscriptionRequired={() => {
+                const tabsList = document.querySelector('[role="tablist"]');
+                const activateTab = tabsList?.querySelector('[value="subscription"]') as HTMLElement;
+                activateTab?.click();
+              }}
+            />
             
             {vehicles.length === 0 ? (
               <Card className="card-mobile text-center py-8">
@@ -471,11 +483,24 @@ export function ParkingSMSApp() {
               </div>
               
               <Button
-                onClick={() => setSmsSheetOpen(true)}
+                onClick={() => {
+                  if (!canUsePremiumFeatures) {
+                    toast({
+                      title: settings.language === 'ar' ? 'الاشتراك مطلوب' : settings.language === 'hi' ? 'सदस्यता आवश्यक' : 'Subscription Required',
+                      description: settings.language === 'ar' ? 'يرجى تفعيل اشتراكك أولاً لإرسال رسائل SMS. انتقل إلى علامة تبويب التفعيل.' : settings.language === 'hi' ? 'SMS भेजने के लिए कृपया पहले अपनी सदस्यता सक्रिय करें। सक्रिय करें टैब पर जाएं।' : 'Please activate your subscription first to send SMS. Go to the Activate tab.',
+                      variant: "destructive"
+                    });
+                    const tabsList = document.querySelector('[role="tablist"]');
+                    const activateTab = tabsList?.querySelector('[value="subscription"]') as HTMLElement;
+                    activateTab?.click();
+                    return;
+                  }
+                  setSmsSheetOpen(true);
+                }}
                 variant="default"
                 size="lg"
                 className="w-full"
-                disabled={!canUsePremiumFeatures || vehicles.length === 0}
+                disabled={vehicles.length === 0}
               >
                 <Send className="h-5 w-5" />
                 {translations.sendAll} ({pendingCount})
@@ -551,6 +576,12 @@ export function ParkingSMSApp() {
               onUpdateSchedule={handleUpdateSchedule}
               onCreateSchedule={handleCreateSchedule}
               isRTL={rtl}
+              hasActiveSubscription={canUsePremiumFeatures}
+              onSubscriptionRequired={() => {
+                const tabsList = document.querySelector('[role="tablist"]');
+                const activateTab = tabsList?.querySelector('[value="subscription"]') as HTMLElement;
+                activateTab?.click();
+              }}
             />
           </TabsContent>
 
