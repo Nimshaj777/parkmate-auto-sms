@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Crown, LogOut, Copy, Download, RefreshCw } from 'lucide-react';
+import { Crown, LogOut, Copy, Download, RefreshCw, Zap, TrendingUp, BarChart3 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
@@ -25,10 +25,34 @@ export function AdminCodeGenerator() {
   const [count, setCount] = useState<number>(1);
   const [generatedCodes, setGeneratedCodes] = useState<GeneratedCode[]>([]);
   const [generating, setGenerating] = useState(false);
+  const [codeStats, setCodeStats] = useState({ total: 0, used: 0, unused: 0 });
 
   useEffect(() => {
     checkAuth();
   }, []);
+
+  // Session timeout (30 minutes)
+  useEffect(() => {
+    if (isAuthenticated && isAdmin) {
+      const timeout = setTimeout(() => {
+        handleLogout();
+        toast({ 
+          title: "Session Expired", 
+          description: "Please login again for security",
+          variant: "destructive"
+        });
+      }, 30 * 60 * 1000);
+      
+      return () => clearTimeout(timeout);
+    }
+  }, [isAuthenticated, isAdmin]);
+
+  // Load code statistics
+  useEffect(() => {
+    if (isAdmin) {
+      loadCodeStats();
+    }
+  }, [isAdmin, generatedCodes]);
 
   const checkAuth = async () => {
     try {
@@ -148,6 +172,44 @@ export function AdminCodeGenerator() {
     toast({ title: "Downloaded!", description: "Codes exported to CSV" });
   };
 
+  const loadCodeStats = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('activation_codes')
+        .select('is_used');
+      
+      if (error) throw error;
+      
+      const total = data?.length || 0;
+      const used = data?.filter(c => c.is_used).length || 0;
+      
+      setCodeStats({
+        total,
+        used,
+        unused: total - used
+      });
+    } catch (error) {
+      console.error('Error loading stats:', error);
+    }
+  };
+
+  const quickGenerate = async (type: 'trial' | 'monthly' | 'quarterly' | 'yearly', quantity: number) => {
+    const durations = {
+      trial: 5,
+      monthly: 30,
+      quarterly: 90,
+      yearly: 365
+    };
+    
+    setDuration(durations[type]);
+    setCount(quantity);
+    
+    // Auto-trigger generation
+    setTimeout(async () => {
+      await generateCodes();
+    }, 100);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -234,9 +296,118 @@ export function AdminCodeGenerator() {
           </div>
         </Card>
 
-        {/* Code Generator */}
+        {/* Code Statistics */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <BarChart3 className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Total Codes</p>
+                <p className="text-2xl font-bold">{codeStats.total}</p>
+              </div>
+            </div>
+          </Card>
+          
+          <Card className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-green-500/10 rounded-lg">
+                <TrendingUp className="h-5 w-5 text-green-500" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Used Codes</p>
+                <p className="text-2xl font-bold">{codeStats.used}</p>
+              </div>
+            </div>
+          </Card>
+          
+          <Card className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-500/10 rounded-lg">
+                <Zap className="h-5 w-5 text-blue-500" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Available Codes</p>
+                <p className="text-2xl font-bold">{codeStats.unused}</p>
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        {/* Quick Generation Presets */}
         <Card className="p-6">
-          <h2 className="text-xl font-semibold mb-4">Generate Activation Codes</h2>
+          <h2 className="text-xl font-semibold mb-2">Quick Generate</h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            One-click code generation for common scenarios
+          </p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <Button 
+              onClick={() => quickGenerate('trial', 10)}
+              variant="outline"
+              className="justify-start h-auto p-4"
+              disabled={generating}
+            >
+              <div className="flex items-start gap-3 w-full">
+                <Zap className="h-5 w-5 text-primary mt-0.5" />
+                <div className="text-left">
+                  <div className="font-semibold">Generate 10 Trial Codes</div>
+                  <div className="text-xs text-muted-foreground">5-day trial period</div>
+                </div>
+              </div>
+            </Button>
+            
+            <Button 
+              onClick={() => quickGenerate('monthly', 10)}
+              variant="outline"
+              className="justify-start h-auto p-4"
+              disabled={generating}
+            >
+              <div className="flex items-start gap-3 w-full">
+                <Zap className="h-5 w-5 text-blue-500 mt-0.5" />
+                <div className="text-left">
+                  <div className="font-semibold">Generate 10 Monthly Codes</div>
+                  <div className="text-xs text-muted-foreground">30-day subscription</div>
+                </div>
+              </div>
+            </Button>
+            
+            <Button 
+              onClick={() => quickGenerate('quarterly', 5)}
+              variant="outline"
+              className="justify-start h-auto p-4"
+              disabled={generating}
+            >
+              <div className="flex items-start gap-3 w-full">
+                <Zap className="h-5 w-5 text-green-500 mt-0.5" />
+                <div className="text-left">
+                  <div className="font-semibold">Generate 5 Quarterly Codes</div>
+                  <div className="text-xs text-muted-foreground">90-day subscription</div>
+                </div>
+              </div>
+            </Button>
+            
+            <Button 
+              onClick={() => quickGenerate('yearly', 5)}
+              variant="outline"
+              className="justify-start h-auto p-4"
+              disabled={generating}
+            >
+              <div className="flex items-start gap-3 w-full">
+                <Zap className="h-5 w-5 text-purple-500 mt-0.5" />
+                <div className="text-left">
+                  <div className="font-semibold">Generate 5 Yearly Codes</div>
+                  <div className="text-xs text-muted-foreground">365-day subscription</div>
+                </div>
+              </div>
+            </Button>
+          </div>
+        </Card>
+
+        {/* Custom Code Generator */}
+        <Card className="p-6">
+          <h2 className="text-xl font-semibold mb-4">Custom Code Generation</h2>
           <p className="text-sm text-muted-foreground mb-6">
             Each code activates one villa with up to 20 vehicles. Users can add unlimited villas by activating each one separately.
           </p>

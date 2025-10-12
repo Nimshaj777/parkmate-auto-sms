@@ -9,8 +9,7 @@ import { SMSStatusSheet } from '@/components/SMSStatusSheet';
 import { VillaManager } from '@/components/VillaManager';
 import { AutomationSettings } from '@/components/AutomationSettings';
 import { VillaSubscriptionList } from '@/components/VillaSubscriptionList';
-import { Car, Send, Crown, Globe, MessageSquare, Moon, Sun, Trash2, Home, Clock, Settings } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Car, Send, Crown, Globe, MessageSquare, Moon, Sun, Trash2, Home, Clock } from 'lucide-react';
 import { LocalStorage } from '@/utils/storage';
 import { getTranslations, isRTL } from '@/utils/i18n';
 import { useToast } from '@/hooks/use-toast';
@@ -324,16 +323,6 @@ export function ParkingSMSApp() {
           </div>
           
           <div className={`flex items-center gap-2 ${rtl ? 'flex-row-reverse' : ''}`}>
-            <Link to="/admin">
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-10 w-10"
-                title="Admin Panel"
-              >
-                <Settings className="h-4 w-4" />
-              </Button>
-            </Link>
             <Button
               onClick={toggleTheme}
               variant="outline"

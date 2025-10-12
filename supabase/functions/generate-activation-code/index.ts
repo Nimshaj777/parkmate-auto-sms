@@ -46,9 +46,9 @@ serve(async (req) => {
 
     const { duration = 30, count = 1, villaCount = 1 } = await req.json();
 
-    if (![30, 60, 90].includes(duration)) {
+    if (![5, 30, 60, 90, 180, 365].includes(duration)) {
       return new Response(
-        JSON.stringify({ error: 'Invalid duration. Must be 30, 60, or 90 days' }),
+        JSON.stringify({ error: 'Invalid duration. Must be 5, 30, 60, 90, 180, or 365 days' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
