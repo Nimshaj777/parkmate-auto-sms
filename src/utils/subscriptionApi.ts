@@ -73,7 +73,7 @@ export class SubscriptionAPI {
   /**
    * Validate and activate an activation code
    */
-  static async activateWithCode(code: string): Promise<{ success: boolean; subscription?: SubscriptionStatus; error?: string }> {
+  static async activateWithCode(code: string): Promise<{ success: boolean; subscription?: SubscriptionStatus; error?: string; message?: string }> {
     try {
       const deviceId = await this.getDeviceId();
 

@@ -222,10 +222,19 @@ export function ParkingSMSApp() {
   };
 
   const handleLanguageSwitch = async () => {
-    const newLanguage: 'en' | 'ar' = settings.language === 'en' ? 'ar' : 'en';
+    const languageCycle: Array<'en' | 'ar' | 'hi'> = ['en', 'ar', 'hi'];
+    const currentIndex = languageCycle.indexOf(settings.language);
+    const nextIndex = (currentIndex + 1) % languageCycle.length;
+    const newLanguage = languageCycle[nextIndex];
+    
     const newSettings = { ...settings, language: newLanguage };
     setSettings(newSettings);
     await LocalStorage.saveSettings(newSettings);
+    
+    toast({
+      title: "Language Changed",
+      description: `${newLanguage === 'en' ? 'English' : newLanguage === 'ar' ? 'العربية' : 'हिंदी'}`
+    });
   };
 
   const handleSubscriptionUpdate = async (newSubscription: SubscriptionStatus) => {
@@ -292,9 +301,13 @@ export function ParkingSMSApp() {
               onClick={handleLanguageSwitch}
               variant="outline"
               size="icon"
-              className="h-10 w-10"
+              className="h-10 w-10 relative"
+              title="Switch Language: English → العربية → हिंदी"
             >
               <Globe className="h-4 w-4" />
+              <span className="absolute -top-1 -right-1 text-[8px] bg-primary text-primary-foreground rounded-full px-1 font-bold">
+                {settings.language.toUpperCase()}
+              </span>
             </Button>
             {!canUsePremiumFeatures && (
               <Badge variant="destructive" className="text-xs">

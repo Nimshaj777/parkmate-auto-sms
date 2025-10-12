@@ -70,6 +70,37 @@ serve(async (req) => {
       );
     }
 
+    // Check for existing active subscription to stack time
+    const { data: existingSubscriptions } = await supabaseAdmin
+      .from('user_subscriptions')
+      .select('*')
+      .eq('device_id', deviceId)
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    let expiresAt = new Date();
+    let subscriptionMessage = '';
+    
+    if (existingSubscriptions && existingSubscriptions.length > 0) {
+      const existing = existingSubscriptions[0];
+      const existingExpiry = new Date(existing.expires_at);
+      
+      // Stack time: If existing subscription not expired yet, add from expiry date
+      if (existingExpiry > new Date()) {
+        expiresAt = new Date(existingExpiry);
+        expiresAt.setDate(expiresAt.getDate() + codeData.duration);
+        subscriptionMessage = 'Subscription extended! Time added to existing subscription.';
+      } else {
+        // Expired subscription, start fresh from today
+        expiresAt.setDate(expiresAt.getDate() + codeData.duration);
+        subscriptionMessage = 'Subscription activated!';
+      }
+    } else {
+      // No existing subscription, start fresh
+      expiresAt.setDate(expiresAt.getDate() + codeData.duration);
+      subscriptionMessage = 'Subscription activated!';
+    }
+
     // Mark code as used
     const { error: updateError } = await supabaseAdmin
       .from('activation_codes')
@@ -88,10 +119,7 @@ serve(async (req) => {
       );
     }
 
-    // Create subscription
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + codeData.duration);
-
+    // Create new subscription (stacked)
     const { error: subError } = await supabaseAdmin
       .from('user_subscriptions')
       .insert({
@@ -114,6 +142,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
+        message: subscriptionMessage,
         subscription: {
           isActive: true,
           type: 'activation_code',

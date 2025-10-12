@@ -1,6 +1,6 @@
 import type { LanguageStrings } from '@/types';
 
-export const translations: Record<'en' | 'ar', LanguageStrings> = {
+export const translations: Record<'en' | 'ar' | 'hi', LanguageStrings> = {
   en: {
     appName: 'Parking SMS',
     vehicles: 'Vehicles',
@@ -68,13 +68,47 @@ export const translations: Record<'en' | 'ar', LanguageStrings> = {
     date: 'التاريخ',
     successful: 'ناجح',
     errors: 'أخطاء'
+  },
+  hi: {
+    appName: 'पार्किंग SMS',
+    vehicles: 'वाहन',
+    addVehicle: 'वाहन जोड़ें',
+    plateNumber: 'नंबर प्लेट',
+    roomName: 'कमरा/फ्लैट',
+    smsMessage: 'SMS संदेश',
+    sendAll: 'सभी SMS भेजें',
+    status: 'स्थिति',
+    sent: 'भेजा गया',
+    failed: 'विफल',
+    pending: 'लंबित',
+    verified: 'सत्यापित',
+    settings: 'सेटिंग्स',
+    subscription: 'सदस्यता',
+    activationCode: 'सक्रियण कोड',
+    enterCode: 'सक्रियण कोड दर्ज करें',
+    activate: 'सक्रिय करें',
+    subscriptionExpired: 'सदस्यता समाप्त',
+    renewSubscription: 'सदस्यता नवीनीकरण',
+    villa: 'विला',
+    villas: 'विला',
+    addVilla: 'विला जोड़ें',
+    automation: 'ऑटो',
+    schedule: 'अनुसूची',
+    notifications: 'सूचनाएं',
+    defaultNumber: 'डिफ़ॉल्ट नंबर',
+    serialNumber: 'क्र.सं.',
+    smsHistory: 'SMS इतिहास',
+    last7Days: 'पिछले 7 दिन',
+    date: 'तारीख',
+    successful: 'सफल',
+    errors: 'त्रुटियां'
   }
 };
 
-export const getTranslations = (language: 'en' | 'ar'): LanguageStrings => {
+export const getTranslations = (language: 'en' | 'ar' | 'hi'): LanguageStrings => {
   return translations[language];
 };
 
-export const isRTL = (language: 'en' | 'ar'): boolean => {
+export const isRTL = (language: 'en' | 'ar' | 'hi'): boolean => {
   return language === 'ar';
 };

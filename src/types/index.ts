@@ -48,7 +48,7 @@ export interface NotificationReminder {
 }
 
 export interface AppSettings {
-  language: 'en' | 'ar';
+  language: 'en' | 'ar' | 'hi';
   defaultSmsNumber: string; // Global default
   notificationsEnabled: boolean;
   automationEnabled: boolean;
