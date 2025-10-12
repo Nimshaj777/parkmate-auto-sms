@@ -5,10 +5,11 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Clock, Calendar, Bell, Play, Home } from 'lucide-react';
+import { Clock, Play } from 'lucide-react';
 import { TimePicker } from '@/components/ui/time-picker';
 import { format24To12Hour } from '@/utils/timeFormat';
 import type { Villa, AutomationSchedule } from '@/types';
+import { ScheduledAutomationCalendar } from './ScheduledAutomationCalendar';
 
 interface AutomationSettingsProps {
   villas: Villa[];
@@ -206,7 +207,7 @@ export function AutomationSettings({
             <div className="p-3 bg-muted/50 rounded-lg">
               <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
                 <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                  <Calendar className="h-4 w-4 text-primary" />
+                  <Clock className="h-4 w-4 text-primary" />
                   <span className="text-sm font-medium">Current Schedule</span>
                 </div>
                 <Badge variant={currentSchedule.enabled ? "success" : "secondary"}>
@@ -234,84 +235,20 @@ export function AutomationSettings({
         </CardContent>
       </Card>
 
-      {/* Saved Automation List */}
-      <Card className="card-mobile">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Bell className="h-5 w-5 text-primary" />
-            Scheduled Automations / الأتمتة المجدولة
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {schedules.length === 0 ? (
-            <div className="text-center py-6 text-muted-foreground">
-              <Clock className="h-12 w-12 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">No automations scheduled yet</p>
-              <p className="text-xs">Configure a schedule above to get started</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {schedules.map(schedule => {
-                const villa = villas.find(v => v.id === schedule.villaId);
-                const activeDays = DAYS_OF_WEEK.filter((_, index) => schedule.daysOfWeek[index]);
-                
-                return (
-                  <div
-                    key={schedule.id}
-                    className={`p-4 rounded-lg border ${
-                      schedule.enabled ? 'bg-primary/5 border-primary/20' : 'bg-muted/30 border-border'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="space-y-1 flex-1">
-                        <div className="flex items-center gap-2">
-                          <Home className="h-4 w-4" />
-                          <span className="font-semibold">{villa?.name || 'Unknown Villa'}</span>
-                          <Badge variant={schedule.enabled ? "default" : "secondary"} className="text-xs">
-                            {schedule.enabled ? 'Active' : 'Disabled'}
-                          </Badge>
-                        </div>
-                        
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Clock className="h-3 w-3" />
-                          <span>{format24To12Hour(schedule.time)}</span>
-                        </div>
-                        
-                        <div className="flex flex-wrap gap-1">
-                          {activeDays.map(day => (
-                            <Badge key={day.key} variant="outline" className="text-xs">
-                              {day.short}
-                            </Badge>
-                          ))}
-                        </div>
-                        
-                        {schedule.lastRun && (
-                          <p className="text-xs text-muted-foreground">
-                            Last run: {schedule.lastRun.toLocaleDateString()} at {schedule.lastRun.toLocaleTimeString()}
-                          </p>
-                        )}
-                      </div>
-                      
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedVilla(schedule.villaId);
-                          setTime(schedule.time);
-                          setDaysOfWeek(schedule.daysOfWeek);
-                          setIsEnabled(schedule.enabled);
-                        }}
-                      >
-                        Edit
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/* 7-Day Schedule Calendar */}
+      <ScheduledAutomationCalendar
+        villas={villas}
+        schedules={schedules}
+        onEditSchedule={(schedule) => {
+          setSelectedVilla(schedule.villaId);
+          setTime(schedule.time);
+          setDaysOfWeek(schedule.daysOfWeek);
+          setIsEnabled(schedule.enabled);
+          // Scroll to top to show the edit form
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        isRTL={isRTL}
+      />
     </div>
   );
 }
