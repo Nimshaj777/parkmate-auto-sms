@@ -229,4 +229,58 @@ export class LocalStorage {
       console.error('Error saving trial IPs:', error);
     }
   }
+
+  // SMS History management
+  static async getSMSHistory(): Promise<import('@/types').SMSHistoryEntry[]> {
+    try {
+      const { value } = await Storage.get({ key: 'sms_history' });
+      return value ? JSON.parse(value) : [];
+    } catch (error) {
+      console.error('Error getting SMS history:', error);
+      return [];
+    }
+  }
+
+  static async saveSMSHistory(history: import('@/types').SMSHistoryEntry[]): Promise<void> {
+    try {
+      await Storage.set({
+        key: 'sms_history',
+        value: JSON.stringify(history)
+      });
+    } catch (error) {
+      console.error('Error saving SMS history:', error);
+    }
+  }
+
+  static async logSMSToHistory(success: boolean): Promise<void> {
+    try {
+      const history = await this.getSMSHistory();
+      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+      
+      // Find or create today's entry
+      const todayEntry = history.find(h => h.date === today);
+      if (todayEntry) {
+        if (success) {
+          todayEntry.successful++;
+        } else {
+          todayEntry.errors++;
+        }
+      } else {
+        history.push({
+          date: today,
+          successful: success ? 1 : 0,
+          errors: success ? 0 : 1
+        });
+      }
+      
+      // Keep only last 30 days
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const filtered = history.filter(h => new Date(h.date) >= thirtyDaysAgo);
+      
+      await this.saveSMSHistory(filtered);
+    } catch (error) {
+      console.error('Error logging SMS to history:', error);
+    }
+  }
 }

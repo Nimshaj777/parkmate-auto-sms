@@ -43,6 +43,7 @@ export function ParkingSMSApp() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [clearDataDialog, setClearDataDialog] = useState(false);
   const [confirmClearDialog, setConfirmClearDialog] = useState(false);
+  const [smsHistory, setSmsHistory] = useState<import('@/types').SMSHistoryEntry[]>([]);
 
   const { toast } = useToast();
   const translations = getTranslations(settings.language);
@@ -63,12 +64,13 @@ export function ParkingSMSApp() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [vehiclesData, villasData, schedulesData, settingsData, villaSubsData] = await Promise.all([
+        const [vehiclesData, villasData, schedulesData, settingsData, villaSubsData, historyData] = await Promise.all([
           LocalStorage.getVehicles(),
           LocalStorage.getVillas(),
           LocalStorage.getAutomationSchedules(),
           LocalStorage.getSettings(),
-          VillaSubscriptionAPI.getVillaSubscriptions()
+          VillaSubscriptionAPI.getVillaSubscriptions(),
+          LocalStorage.getSMSHistory()
         ]);
         
         setVehicles(vehiclesData);
@@ -76,6 +78,7 @@ export function ParkingSMSApp() {
         setSchedules(schedulesData);
         setSettings(settingsData);
         setVillaSubscriptions(villaSubsData);
+        setSmsHistory(historyData);
       } catch (error) {
         console.error('Error loading data:', error);
       } finally {
@@ -306,15 +309,17 @@ export function ParkingSMSApp() {
 
   const handleClearAllData = async () => {
     try {
-      // Clear vehicles, villas, and automation schedules - preserve subscriptions and settings
+      // Clear vehicles, villas, automation schedules, and SMS history - preserve subscriptions and settings
       await Promise.all([
         LocalStorage.saveVehicles([]),
         LocalStorage.saveVillas([]),
         LocalStorage.saveAutomationSchedules([]),
+        LocalStorage.saveSMSHistory([]),
       ]);
       setVehicles([]);
       setVillas([]);
       setSchedules([]);
+      setSmsHistory([]);
       
       toast({ 
         title: settings.language === 'ar' ? "تم مسح البيانات" : settings.language === 'hi' ? "डेटा साफ़ किया गया" : "Data Cleared", 
@@ -601,12 +606,32 @@ export function ParkingSMSApp() {
                             for (let i = 0; i < villaVehiclesToSend.length; i++) {
                               const vehicle = villaVehiclesToSend[i];
                               
-                              // Simulate SMS sending delay (1 second per message)
-                              await new Promise(resolve => setTimeout(resolve, 1000));
-                              
-                              // Update vehicle status to sent
-                              await handleUpdateVehicle(vehicle.id, { status: 'sent', lastSent: new Date() });
+                              try {
+                                // Simulate SMS sending delay (1 second per message)
+                                await new Promise(resolve => setTimeout(resolve, 1000));
+                                
+                                // Randomly simulate failures (10% chance) for realistic testing
+                                const success = Math.random() > 0.1;
+                                
+                                if (success) {
+                                  // Update vehicle status to sent
+                                  await handleUpdateVehicle(vehicle.id, { status: 'sent', lastSent: new Date() });
+                                  await LocalStorage.logSMSToHistory(true);
+                                } else {
+                                  // Mark as failed
+                                  await handleUpdateVehicle(vehicle.id, { status: 'failed', lastSent: new Date() });
+                                  await LocalStorage.logSMSToHistory(false);
+                                }
+                              } catch (error) {
+                                console.error(`Failed to send SMS for vehicle ${vehicle.plateNumber}:`, error);
+                                await handleUpdateVehicle(vehicle.id, { status: 'failed' });
+                                await LocalStorage.logSMSToHistory(false);
+                              }
                             }
+                            
+                            // Reload SMS history after sending
+                            const updatedHistory = await LocalStorage.getSMSHistory();
+                            setSmsHistory(updatedHistory);
                             
                             // Show completion toast
                             toast({
@@ -665,9 +690,12 @@ export function ParkingSMSApp() {
                         month: 'short',
                         day: 'numeric'
                       });
-                      // Mock data for demonstration - in real app, this would come from storage
-                      const successful = Math.floor(Math.random() * 10);
-                      const errors = Math.floor(Math.random() * 3);
+                      
+                      // Get actual data from SMS history
+                      const historyDate = date.toISOString().split('T')[0];
+                      const historyEntry = smsHistory.find(h => h.date === historyDate);
+                      const successful = historyEntry?.successful || 0;
+                      const errors = historyEntry?.errors || 0;
                       
                       return (
                         <div key={i} className={`flex items-center justify-between p-2 rounded-lg bg-muted/30 ${rtl ? 'flex-row-reverse' : ''}`}>
