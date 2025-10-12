@@ -9,12 +9,22 @@ import { SMSStatusSheet } from '@/components/SMSStatusSheet';
 import { SubscriptionCard } from '@/components/SubscriptionCard';
 import { VillaManager } from '@/components/VillaManager';
 import { AutomationSettings } from '@/components/AutomationSettings';
-import { Car, Send, Crown, Globe, MessageSquare, Moon, Sun, Settings, Home, Clock } from 'lucide-react';
+import { Car, Send, Crown, Globe, MessageSquare, Moon, Sun, Trash2, Home, Clock } from 'lucide-react';
 import { LocalStorage } from '@/utils/storage';
 import { getTranslations, isRTL } from '@/utils/i18n';
 import { useToast } from '@/hooks/use-toast';
 import { SubscriptionAPI } from '@/utils/subscriptionApi';
 import type { Vehicle, AppSettings, SubscriptionStatus, Villa, AutomationSchedule } from '@/types';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 export function ParkingSMSApp() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
@@ -34,6 +44,8 @@ export function ParkingSMSApp() {
   const [smsSheetOpen, setSmsSheetOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [clearDataDialog, setClearDataDialog] = useState(false);
+  const [confirmClearDialog, setConfirmClearDialog] = useState(false);
 
   const { toast } = useToast();
   const translations = getTranslations(settings.language);
@@ -237,6 +249,31 @@ export function ParkingSMSApp() {
     });
   };
 
+  const handleClearAllData = async () => {
+    try {
+      // Clear only vehicles and villas - preserve subscription and settings
+      await LocalStorage.saveVehicles([]);
+      await LocalStorage.saveVillas([]);
+      setVehicles([]);
+      setVillas([]);
+      
+      toast({ 
+        title: settings.language === 'ar' ? "تم مسح البيانات" : settings.language === 'hi' ? "डेटा साफ़ किया गया" : "Data Cleared", 
+        description: settings.language === 'ar' ? "تم حذف جميع المركبات والفلل. اشتراكك لا يزال نشطًا." : settings.language === 'hi' ? "सभी वाहन और विला हटा दिए गए। आपकी सदस्यता सक्रिय है।" : "All vehicles and villas removed. Your subscription is still active."
+      });
+      
+      setClearDataDialog(false);
+      setConfirmClearDialog(false);
+    } catch (error) {
+      console.error('Error clearing data:', error);
+      toast({ 
+        title: "Error", 
+        description: "Failed to clear data",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleSubscriptionUpdate = async (newSubscription: SubscriptionStatus) => {
     setSubscription(newSubscription);
     
@@ -308,6 +345,15 @@ export function ParkingSMSApp() {
               <span className="absolute -top-1 -right-1 text-[8px] bg-primary text-primary-foreground rounded-full px-1 font-bold">
                 {settings.language.toUpperCase()}
               </span>
+            </Button>
+            <Button
+              onClick={() => setClearDataDialog(true)}
+              variant="outline"
+              size="icon"
+              className="h-10 w-10"
+              title={settings.language === 'ar' ? "مسح كل البيانات" : settings.language === 'hi' ? "सभी डेटा साफ़ करें" : "Clear All Data"}
+            >
+              <Trash2 className="h-4 w-4" />
             </Button>
             {!canUsePremiumFeatures && (
               <Badge variant="destructive" className="text-xs">
@@ -535,6 +581,93 @@ export function ParkingSMSApp() {
         onStatusUpdate={handleSMSStatusUpdate}
         isRTL={rtl}
       />
+
+      {/* First Confirmation Dialog */}
+      <AlertDialog open={clearDataDialog} onOpenChange={setClearDataDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {settings.language === 'ar' ? '⚠️ تحذير: مسح جميع البيانات' : settings.language === 'hi' ? '⚠️ चेतावनी: सभी डेटा साफ़ करें' : '⚠️ Warning: Clear All Data'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {settings.language === 'ar' 
+                ? 'سيؤدي هذا إلى حذف جميع المركبات والفلل بشكل دائم. لن يتأثر اشتراكك. هل أنت متأكد؟' 
+                : settings.language === 'hi' 
+                ? 'यह सभी वाहनों और विला को स्थायी रूप से हटा देगा। आपकी सदस्यता प्रभावित नहीं होगी। क्या आप सुनिश्चित हैं?' 
+                : 'This will permanently delete all vehicles and villas. Your subscription will NOT be affected. Are you sure?'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>
+              {settings.language === 'ar' ? 'إلغاء' : settings.language === 'hi' ? 'रद्द करें' : 'Cancel'}
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              setClearDataDialog(false);
+              setConfirmClearDialog(true);
+            }} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {settings.language === 'ar' ? 'متابعة' : settings.language === 'hi' ? 'जारी रखें' : 'Continue'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Second Confirmation Dialog */}
+      <AlertDialog open={confirmClearDialog} onOpenChange={setConfirmClearDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {settings.language === 'ar' ? '🚨 تأكيد نهائي' : settings.language === 'hi' ? '🚨 अंतिम पुष्टि' : '🚨 Final Confirmation'}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p className="font-semibold">
+                {settings.language === 'ar' 
+                  ? 'سيتم حذف البيانات التالية:' 
+                  : settings.language === 'hi' 
+                  ? 'निम्नलिखित डेटा हटाया जाएगा:' 
+                  : 'The following data will be deleted:'}
+              </p>
+              <ul className="list-disc list-inside space-y-1">
+                <li>
+                  {settings.language === 'ar' 
+                    ? `${vehicles.length} مركبات` 
+                    : settings.language === 'hi' 
+                    ? `${vehicles.length} वाहन` 
+                    : `${vehicles.length} vehicles`}
+                </li>
+                <li>
+                  {settings.language === 'ar' 
+                    ? `${villas.length} فلل` 
+                    : settings.language === 'hi' 
+                    ? `${villas.length} विला` 
+                    : `${villas.length} villas`}
+                </li>
+              </ul>
+              <p className="text-green-600 dark:text-green-400 font-semibold mt-4">
+                {settings.language === 'ar' 
+                  ? '✓ اشتراكك سيبقى نشطًا' 
+                  : settings.language === 'hi' 
+                  ? '✓ आपकी सदस्यता सक्रिय रहेगी' 
+                  : '✓ Your subscription will remain active'}
+              </p>
+              <p className="text-destructive font-semibold mt-2">
+                {settings.language === 'ar' 
+                  ? 'لا يمكن التراجع عن هذا الإجراء!' 
+                  : settings.language === 'hi' 
+                  ? 'इसे पूर्ववत नहीं किया जा सकता!' 
+                  : 'This action cannot be undone!'}
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>
+              {settings.language === 'ar' ? 'إلغاء' : settings.language === 'hi' ? 'रद्द करें' : 'Cancel'}
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleClearAllData} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {settings.language === 'ar' ? 'نعم، احذف كل شيء' : settings.language === 'hi' ? 'हां, सब कुछ हटाएं' : 'Yes, Delete Everything'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
