@@ -98,17 +98,69 @@ serve(async (req) => {
 
     // Check if code has already been used
     if (activationCode.is_used) {
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: 'This activation code has already been used' 
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-      );
+      // If code is used, check if it's being reused by the same device
+      if (activationCode.used_by_device_id !== deviceId) {
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: 'This activation code has already been used by another device' 
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+        );
+      }
+
+      // Check if code's validity period has expired (30 days from first use)
+      if (activationCode.used_at) {
+        const firstUsedDate = new Date(activationCode.used_at);
+        const expiryDate = new Date(firstUsedDate);
+        expiryDate.setDate(expiryDate.getDate() + activationCode.duration);
+        
+        if (new Date() > expiryDate) {
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              error: 'This activation code has expired (30 days from first use)' 
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+          );
+        }
+      }
+
+      // Check villa_count limit - count how many villas this code has activated
+      const { data: existingActivations, error: countError } = await supabaseAdmin
+        .from('villa_subscriptions')
+        .select('villa_id')
+        .eq('activation_code', code)
+        .eq('device_id', deviceId);
+
+      if (countError) {
+        console.error('Error counting existing activations:', countError);
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: 'Error checking activation limit' 
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+        );
+      }
+
+      const villaCount = activationCode.villa_count || 1;
+      const uniqueVillas = new Set(existingActivations?.map(a => a.villa_id) || []);
+      
+      // If this villa is already activated, allow reactivation (extension)
+      if (!uniqueVillas.has(villaId) && uniqueVillas.size >= villaCount) {
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: `This activation code can only activate ${villaCount} villa(s). Limit reached.` 
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+        );
+      }
     }
 
-    // Check if code has expired
-    if (activationCode.expires_at && new Date(activationCode.expires_at) < new Date()) {
+    // Check if code has expired (for unused codes)
+    if (!activationCode.is_used && activationCode.expires_at && new Date(activationCode.expires_at) < new Date()) {
       return new Response(
         JSON.stringify({ 
           success: false, 
