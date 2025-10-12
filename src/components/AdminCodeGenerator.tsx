@@ -26,6 +26,8 @@ export function AdminCodeGenerator() {
   const [generatedCodes, setGeneratedCodes] = useState<GeneratedCode[]>([]);
   const [generating, setGenerating] = useState(false);
   const [codeStats, setCodeStats] = useState({ total: 0, used: 0, unused: 0 });
+  const [usedCodesHistory, setUsedCodesHistory] = useState<any[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -51,6 +53,7 @@ export function AdminCodeGenerator() {
   useEffect(() => {
     if (isAdmin) {
       loadCodeStats();
+      loadUsedCodesHistory();
     }
   }, [isAdmin, generatedCodes]);
 
@@ -193,6 +196,22 @@ export function AdminCodeGenerator() {
     }
   };
 
+  const loadUsedCodesHistory = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('activation_codes')
+        .select('code, duration, used_at, used_by_device_id, villa_count')
+        .eq('is_used', true)
+        .order('used_at', { ascending: false })
+        .limit(50);
+      
+      if (error) throw error;
+      setUsedCodesHistory(data || []);
+    } catch (error) {
+      console.error('Error loading used codes history:', error);
+    }
+  };
+
   const quickGenerate = async (type: 'trial' | 'monthly' | 'quarterly' | 'yearly', quantity: number) => {
     const durations = {
       trial: 5,
@@ -320,6 +339,14 @@ export function AdminCodeGenerator() {
                 <p className="text-2xl font-bold">{codeStats.used}</p>
               </div>
             </div>
+            <Button 
+              onClick={() => setShowHistory(!showHistory)}
+              variant="link" 
+              size="sm" 
+              className="mt-2 p-0 h-auto"
+            >
+              {showHistory ? 'Hide' : 'View'} History
+            </Button>
           </Card>
           
           <Card className="p-4">
@@ -465,6 +492,42 @@ export function AdminCodeGenerator() {
             </div>
           </div>
         </Card>
+
+        {/* Used Codes History */}
+        {showHistory && usedCodesHistory.length > 0 && (
+          <Card className="p-6">
+            <h2 className="text-xl font-semibold mb-4">Used Codes History</h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              Recently activated codes - showing last 50 activations
+            </p>
+            <div className="space-y-2 max-h-96 overflow-y-auto">
+              {usedCodesHistory.map((item, index) => (
+                <div 
+                  key={index}
+                  className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                >
+                  <div className="flex-1">
+                    <code className="text-lg font-mono font-bold">{item.code}</code>
+                    <div className="flex gap-2 mt-1 flex-wrap">
+                      <Badge variant="secondary">{item.duration} days</Badge>
+                      <Badge variant="outline">{item.villa_count} villa(s)</Badge>
+                      {item.used_at && (
+                        <span className="text-xs text-muted-foreground">
+                          Used: {new Date(item.used_at).toLocaleString()}
+                        </span>
+                      )}
+                    </div>
+                    {item.used_by_device_id && (
+                      <div className="text-xs text-muted-foreground mt-1">
+                        Device: {item.used_by_device_id.substring(0, 8)}...
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
 
         {/* Generated Codes List */}
         {generatedCodes.length > 0 && (

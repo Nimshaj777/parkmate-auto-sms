@@ -9,6 +9,7 @@ import { SMSStatusSheet } from '@/components/SMSStatusSheet';
 import { VillaManager } from '@/components/VillaManager';
 import { AutomationSettings } from '@/components/AutomationSettings';
 import { VillaSubscriptionList } from '@/components/VillaSubscriptionList';
+import { PreviouslyUsedCodes } from '@/components/PreviouslyUsedCodes';
 import { Car, Send, Crown, Globe, MessageSquare, Moon, Sun, Trash2, Home, Clock } from 'lucide-react';
 import { LocalStorage } from '@/utils/storage';
 import { getTranslations, isRTL } from '@/utils/i18n';
@@ -245,7 +246,8 @@ export function ParkingSMSApp() {
 
   const handleClearAllData = async () => {
     try {
-      // Clear only vehicles and villas - preserve subscription and settings
+      // Clear only vehicles and villas - preserve subscriptions and settings
+      // Note: Villa subscriptions in the database will remain intact
       await LocalStorage.saveVehicles([]);
       await LocalStorage.saveVillas([]);
       setVehicles([]);
@@ -253,7 +255,11 @@ export function ParkingSMSApp() {
       
       toast({ 
         title: settings.language === 'ar' ? "تم مسح البيانات" : settings.language === 'hi' ? "डेटा साफ़ किया गया" : "Data Cleared", 
-        description: settings.language === 'ar' ? "تم حذف جميع المركبات والفلل. اشتراكك لا يزال نشطًا." : settings.language === 'hi' ? "सभी वाहन और विला हटा दिए गए। आपकी सदस्यता सक्रिय है।" : "All vehicles and villas removed. Your subscription is still active."
+        description: settings.language === 'ar' 
+          ? "تم حذف المركبات والفلل. اشتراكاتك في قاعدة البيانات لا تزال آمنة. يمكنك إعادة تنشيط الفلل باستخدام نفس الأكواد."
+          : settings.language === 'hi'
+          ? "वाहन और विला हटा दिए गए। आपकी सदस्यताएं डेटाबेस में सुरक्षित हैं। उन्हीं कोड का उपयोग करके विला को फिर से सक्रिय करें।"
+          : "Vehicles and villas cleared. Your subscriptions are safe in the database. Re-activate villas using the same codes."
       });
       
       setClearDataDialog(false);
@@ -596,6 +602,8 @@ export function ParkingSMSApp() {
               language={settings.language}
               direction={rtl ? 'rtl' : 'ltr'}
             />
+            
+            <PreviouslyUsedCodes />
           </TabsContent>
         </Tabs>
       </main>
@@ -618,10 +626,10 @@ export function ParkingSMSApp() {
             </AlertDialogTitle>
             <AlertDialogDescription>
               {settings.language === 'ar' 
-                ? 'سيؤدي هذا إلى حذف جميع المركبات والفلل بشكل دائم. لن يتأثر اشتراكك. هل أنت متأكد؟' 
+                ? 'سيؤدي هذا إلى حذف جميع المركبات والفلل من جهازك فقط. اشتراكات الفلل الخاصة بك ستبقى آمنة في قاعدة البيانات. انتقل إلى علامة تبويب "التفعيل" وتحقق من "الأكواد المستخدمة سابقًا" لإعادة تنشيط الفلل الخاصة بك. هل أنت متأكد؟' 
                 : settings.language === 'hi' 
-                ? 'यह सभी वाहनों और विला को स्थायी रूप से हटा देगा। आपकी सदस्यता प्रभावित नहीं होगी। क्या आप सुनिश्चित हैं?' 
-                : 'This will permanently delete all vehicles and villas. Your subscription will NOT be affected. Are you sure?'}
+                ? 'यह केवल आपके डिवाइस से सभी वाहनों और विला को हटा देगा। आपकी विला सदस्यताएं डेटाबेस में सुरक्षित रहेंगी। अपने विला को फिर से सक्रिय करने के लिए "सक्रिय करें" टैब पर जाएं और "पहले उपयोग किए गए कोड" देखें। क्या आप सुनिश्चित हैं?' 
+                : 'This will delete all vehicles and villas from your device only. Your villa subscriptions will remain safe in the database. Go to the "Activate" tab and check "Previously Used Codes" to reactivate your villas. Are you sure?'}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
