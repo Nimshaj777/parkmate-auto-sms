@@ -142,15 +142,52 @@ export function SubscriptionCard({ subscription, onUpdate, isRTL }: Subscription
           </div>
         )}
         
-        {/* Current Code Display */}
-        {subscription.isActive && subscription.activationCode && !isExpired && (
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">Current Code / الرمز الحالي</Label>
-            <div className="p-3 bg-success/10 rounded-lg border border-success/20">
-              <code className="text-sm font-mono text-success ltr">
-                {subscription.activationCode}
-              </code>
+        {/* Subscription Details Card */}
+        {subscription.isActive && !isExpired && (
+          <div className="space-y-3 p-4 bg-success/5 rounded-lg border border-success/20">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Active Subscription / الاشتراك النشط</Label>
+              {subscription.activationCode && (
+                <div className="p-3 bg-background rounded-lg border">
+                  <code className="text-sm font-mono text-success">
+                    {subscription.activationCode}
+                  </code>
+                </div>
+              )}
             </div>
+            
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <div className="p-3 bg-background rounded-lg border">
+                <p className="text-xs text-muted-foreground mb-1">Villa Access</p>
+                <p className="text-lg font-semibold">
+                  {subscription.villaLimit || 1} {subscription.villaLimit === 1 ? 'Villa' : 'Villas'}
+                </p>
+              </div>
+              <div className="p-3 bg-background rounded-lg border">
+                <p className="text-xs text-muted-foreground mb-1">Vehicles per Villa</p>
+                <p className="text-lg font-semibold">20 Cars</p>
+              </div>
+            </div>
+            
+            <div className="p-3 bg-primary/5 rounded-lg border border-primary/20">
+              <p className="text-xs text-muted-foreground mb-1">Total Capacity / السعة الإجمالية</p>
+              <p className="text-sm font-medium">
+                Up to {(subscription.villaLimit || 1) * 20} vehicles across {subscription.villaLimit || 1} {subscription.villaLimit === 1 ? 'villa' : 'villas'}
+              </p>
+            </div>
+          </div>
+        )}
+        
+        {/* Info Box - How it works */}
+        {(!subscription.isActive || isExpired) && (
+          <div className="p-4 bg-muted/50 rounded-lg space-y-2">
+            <p className="text-sm font-medium">How Subscription Works:</p>
+            <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">
+              <li>Each activation code grants access to specific number of villas</li>
+              <li>1 Villa = 20 vehicles maximum</li>
+              <li>2 Villas = 40 vehicles maximum (and so on)</li>
+              <li>One code covers all villas in your subscription</li>
+            </ul>
           </div>
         )}
         
