@@ -1,1 +1,13 @@
 project_id = "mdvqscuwvypfvyjupulg"
+
+[functions.validate-activation-code]
+verify_jwt = false
+
+[functions.check-trial-eligibility]
+verify_jwt = false
+
+[functions.start-free-trial]
+verify_jwt = false
+
+[functions.get-subscription-status]
+verify_jwt = false

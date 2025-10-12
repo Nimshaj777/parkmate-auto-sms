@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Crown, Key, Calendar, CheckCircle } from 'lucide-react';
-import { SMSService } from '@/utils/sms';
+import { SubscriptionAPI } from '@/utils/subscriptionApi';
+import { toast } from '@/hooks/use-toast';
 import type { SubscriptionStatus } from '@/types';
 
 interface SubscriptionCardProps {
@@ -21,26 +22,44 @@ export function SubscriptionCard({ subscription, onUpdate, isRTL }: Subscription
   const handleActivation = async () => {
     if (!activationCode.trim()) return;
     
-    setIsActivating(true);
-    
-    // Simulate activation process
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    if (SMSService.validateActivationCode(activationCode.trim())) {
-      const newStatus: SubscriptionStatus = {
-        isActive: true,
-        type: 'activation_code',
-        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
-        activationCode: activationCode.trim()
-      };
-      
-      onUpdate(newStatus);
-      setActivationCode('');
-    } else {
-      alert('Invalid activation code. Please check and try again.');
+    // Validate format first
+    if (!SubscriptionAPI.validateCodeFormat(activationCode.trim())) {
+      toast({
+        title: "Invalid Code Format",
+        description: "Code must be in format: PK######XX",
+        variant: "destructive"
+      });
+      return;
     }
     
-    setIsActivating(false);
+    setIsActivating(true);
+    
+    try {
+      const result = await SubscriptionAPI.activateWithCode(activationCode.trim());
+      
+      if (result.success && result.subscription) {
+        onUpdate(result.subscription);
+        setActivationCode('');
+        toast({
+          title: "Activation Successful! / تم التفعيل بنجاح",
+          description: `Your subscription is now active / اشتراكك الآن نشط`,
+        });
+      } else {
+        toast({
+          title: "Activation Failed / فشل التفعيل",
+          description: result.error || "Invalid activation code",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error / خطأ",
+        description: "Failed to activate code. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsActivating(false);
+    }
   };
 
   const isExpired = subscription.expiresAt && new Date() > new Date(subscription.expiresAt);
