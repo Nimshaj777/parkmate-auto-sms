@@ -32,13 +32,20 @@ export function SMSStatusSheet({
     setResults([]);
     
     const vehiclesToSend = vehicles.filter(v => v.status !== 'sent');
+    const totalVehicles = vehiclesToSend.length;
     
-    for (let i = 0; i < vehiclesToSend.length; i++) {
-      const vehicle = vehiclesToSend[i];
-      setCurrentVehicle(vehicle.plateNumber);
+    if (totalVehicles === 0) {
+      setSending(false);
+      return;
+    }
+
+    // Send all SMS in parallel
+    const sendPromises = vehiclesToSend.map(async (vehicle, index) => {
+      setCurrentVehicle(`${index + 1}/${totalVehicles}`);
       
-      // Simulate SMS sending
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Simulate SMS sending with random delay (between 1-2 seconds)
+      const delay = 1000 + Math.random() * 1000;
+      await new Promise(resolve => setTimeout(resolve, delay));
       
       const success = Math.random() > 0.15; // 85% success rate
       const status: Vehicle['status'] = success ? 'sent' : 'failed';
@@ -53,11 +60,19 @@ export function SMSStatusSheet({
       };
       
       setResults(prev => [...prev, result]);
-      setProgress(((i + 1) / vehiclesToSend.length) * 100);
-    }
+      
+      // Update progress incrementally as each SMS completes
+      setProgress(prevProgress => Math.min(100, prevProgress + (100 / totalVehicles)));
+      
+      return result;
+    });
+
+    // Wait for all SMS to complete
+    await Promise.all(sendPromises);
     
     setSending(false);
     setCurrentVehicle(null);
+    setProgress(100);
   };
 
   const getStatusIcon = (status: Vehicle['status']) => {
@@ -121,11 +136,9 @@ export function SMSStatusSheet({
                 <span>{Math.round(progress)}%</span>
               </div>
               <Progress value={progress} className="h-2" />
-              {currentVehicle && (
-                <p className="text-sm text-muted-foreground text-center">
-                  Sending to: {currentVehicle}
-                </p>
-              )}
+              <p className="text-sm text-muted-foreground text-center">
+                Sending to all {vehicles.filter(v => v.status !== 'sent').length} vehicles together / إرسال إلى جميع المركبات معًا
+              </p>
             </div>
           )}
           

@@ -48,10 +48,12 @@ export class SMSService {
   static async sendAllVehicleSMS(vehicles: Vehicle[], governmentNumber: string): Promise<SMSStatus[]> {
     await this.requestPermissions();
     
-    const results: SMSStatus[] = [];
+    console.log(`Starting to send SMS to ${vehicles.length} vehicles in parallel`);
     
-    for (const vehicle of vehicles) {
+    // Send all SMS in parallel using Promise.allSettled
+    const sendPromises = vehicles.map(async (vehicle) => {
       try {
+        console.log(`Sending SMS for vehicle: ${vehicle.plateNumber}`);
         const success = await this.sendSMS(governmentNumber, vehicle.smsMessage);
         
         const status: SMSStatus = {
@@ -61,23 +63,28 @@ export class SMSService {
           message: success ? 'SMS sent successfully' : 'Failed to send SMS'
         };
         
-        results.push(status);
-        
-        // Small delay between messages
-        await new Promise(resolve => setTimeout(resolve, 500));
+        console.log(`SMS result for ${vehicle.plateNumber}: ${status.status}`);
+        return status;
       } catch (error) {
-        results.push({
+        console.error(`Failed to send SMS for ${vehicle.plateNumber}:`, error);
+        return {
           vehicleId: vehicle.id,
-          status: 'failed',
+          status: 'failed' as const,
           message: error instanceof Error ? error.message : 'Unknown error'
-        });
+        };
       }
-    }
+    });
+
+    // Wait for all SMS to complete (parallel execution)
+    const results = await Promise.all(sendPromises);
+    
+    const successCount = results.filter(r => r.status === 'sent').length;
+    console.log(`SMS batch complete: ${successCount}/${results.length} sent successfully`);
     
     // Show completion notification
     await this.showNotification(
       'SMS Batch Complete',
-      `Sent ${results.filter(r => r.status === 'sent').length}/${results.length} messages`
+      `Sent ${successCount}/${results.length} messages`
     );
     
     return results;
