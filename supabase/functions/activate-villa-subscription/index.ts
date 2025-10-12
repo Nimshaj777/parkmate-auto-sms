@@ -129,9 +129,10 @@ serve(async (req) => {
       // Check villa_count limit - count how many villas this code has activated
       const { data: existingActivations, error: countError } = await supabaseAdmin
         .from('villa_subscriptions')
-        .select('villa_id')
+        .select('id, villa_id, expires_at, activated_at')
         .eq('activation_code', code)
-        .eq('device_id', deviceId);
+        .eq('device_id', deviceId)
+        .order('activated_at', { ascending: false });
 
       if (countError) {
         console.error('Error counting existing activations:', countError);
@@ -149,12 +150,45 @@ serve(async (req) => {
       
       // If this villa is already activated, allow reactivation (extension)
       if (!uniqueVillas.has(villaId) && uniqueVillas.size >= villaCount) {
+        // Auto-transfer: allow moving the existing activation on this device/code to the new villa
+        const activationToTransfer = existingActivations?.[0];
+        if (!activationToTransfer) {
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              error: `This activation code can only activate ${villaCount} villa(s). Limit reached.` 
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+          );
+        }
+
+        const { error: transferError } = await supabaseAdmin
+          .from('villa_subscriptions')
+          .update({ villa_id: villaId })
+          .eq('id', activationToTransfer.id);
+
+        if (transferError) {
+          console.error('Error transferring activation to new villa:', transferError);
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              error: `This activation code can only activate ${villaCount} villa(s). Limit reached.` 
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+          );
+        }
+
         return new Response(
           JSON.stringify({ 
-            success: false, 
-            error: `This activation code can only activate ${villaCount} villa(s). Limit reached.` 
+            success: true,
+            message: 'Subscription moved to this villa on the same device',
+            subscription: {
+              villaId,
+              isActive: true,
+              expiresAt: activationToTransfer.expires_at,
+            }
           }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
         );
       }
     }
