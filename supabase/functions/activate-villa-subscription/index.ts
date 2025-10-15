@@ -1,10 +1,17 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+const requestSchema = z.object({
+  code: z.string().trim().regex(/^PK\d{6}[A-Z]{2}$/),
+  deviceId: z.string().trim().min(1).max(100).regex(/^[a-zA-Z0-9_-]+$/),
+  villaId: z.string().trim().min(1).max(50).regex(/^[a-zA-Z0-9_-]+$/),
+});
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -13,6 +20,25 @@ serve(async (req) => {
   }
 
   try {
+    const body = await req.json();
+    
+    // Validate input
+    const validation = requestSchema.safeParse(body);
+    if (!validation.success) {
+      console.error('Validation error:', validation.error);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Invalid input parameters' 
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      );
+    }
+
+    const { code, deviceId, villaId } = validation.data;
+
+    console.log('Activating villa subscription:', { code, deviceId, villaId });
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -20,33 +46,6 @@ serve(async (req) => {
     // Initialize Supabase clients
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
-
-    const { code, deviceId, villaId } = await req.json();
-
-    console.log('Activating villa subscription:', { code, deviceId, villaId });
-
-    // Validate inputs
-    if (!code || !deviceId || !villaId) {
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: 'Missing required fields: code, deviceId, or villaId' 
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
-      );
-    }
-
-    // Validate code format (PK + 6 digits + 2 uppercase letters)
-    const codePattern = /^PK\d{6}[A-Z]{2}$/;
-    if (!codePattern.test(code)) {
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: 'Invalid activation code format' 
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
-      );
-    }
 
     // Check if villa already has an active subscription
     const { data: existingVillaSub, error: existingSubError } = await supabaseAdmin
