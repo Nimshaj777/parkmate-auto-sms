@@ -129,7 +129,7 @@ export type Database = {
           is_active?: boolean
           started_at?: string
           subscription_type: string
-          user_id: string
+          user_id?: string
           villa_limit?: number
         }
         Update: {
