@@ -18,6 +18,15 @@ serve(async (req) => {
   }
 
   try {
+    // Get user from JWT token
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Authentication required' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const body = await req.json();
     
     // Validate input
@@ -34,8 +43,18 @@ serve(async (req) => {
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
     );
+
+    // Get authenticated user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid authentication' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Use service role to check and update the code
     const supabaseAdmin = createClient(
@@ -76,7 +95,7 @@ serve(async (req) => {
     const { data: existingSubscriptions } = await supabaseAdmin
       .from('user_subscriptions')
       .select('*')
-      .eq('device_id', deviceId)
+      .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(1);
 
@@ -125,6 +144,7 @@ serve(async (req) => {
     const { error: subError } = await supabaseAdmin
       .from('user_subscriptions')
       .insert({
+        user_id: user.id,
         device_id: deviceId,
         subscription_type: 'activation_code',
         is_active: true,

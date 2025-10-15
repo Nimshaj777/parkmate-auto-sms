@@ -117,7 +117,7 @@ export type Database = {
           is_active: boolean
           started_at: string
           subscription_type: string
-          user_id: string | null
+          user_id: string
           villa_limit: number
         }
         Insert: {
@@ -129,7 +129,7 @@ export type Database = {
           is_active?: boolean
           started_at?: string
           subscription_type: string
-          user_id?: string | null
+          user_id: string
           villa_limit?: number
         }
         Update: {
@@ -141,7 +141,7 @@ export type Database = {
           is_active?: boolean
           started_at?: string
           subscription_type?: string
-          user_id?: string | null
+          user_id?: string
           villa_limit?: number
         }
         Relationships: []
@@ -155,6 +155,7 @@ export type Database = {
           expires_at: string
           id: string
           is_active: boolean
+          user_id: string | null
           villa_id: string
         }
         Insert: {
@@ -165,6 +166,7 @@ export type Database = {
           expires_at: string
           id?: string
           is_active?: boolean
+          user_id?: string | null
           villa_id: string
         }
         Update: {
@@ -175,6 +177,7 @@ export type Database = {
           expires_at?: string
           id?: string
           is_active?: boolean
+          user_id?: string | null
           villa_id?: string
         }
         Relationships: []

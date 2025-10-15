@@ -20,6 +20,15 @@ serve(async (req) => {
   }
 
   try {
+    // Get user from JWT token
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Authentication required' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const body = await req.json();
     
     // Validate input
@@ -44,15 +53,26 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
     // Initialize Supabase clients
-    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Get authenticated user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid authentication' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Check if villa already has an active subscription
     const { data: existingVillaSub, error: existingSubError } = await supabaseAdmin
       .from('villa_subscriptions')
       .select('*')
       .eq('villa_id', villaId)
-      .eq('device_id', deviceId)
+      .eq('user_id', user.id)
       .single();
 
     if (existingSubError && existingSubError.code !== 'PGRST116') {
@@ -130,7 +150,7 @@ serve(async (req) => {
         .from('villa_subscriptions')
         .select('id, villa_id, expires_at, activated_at')
         .eq('activation_code', code)
-        .eq('device_id', deviceId)
+        .eq('user_id', user.id)
         .order('activated_at', { ascending: false });
 
       if (countError) {
@@ -232,6 +252,7 @@ serve(async (req) => {
       .insert({
         villa_id: villaId,
         device_id: deviceId,
+        user_id: user.id,
         activation_code: code,
         is_active: true,
         expires_at: expiresAt.toISOString(),
