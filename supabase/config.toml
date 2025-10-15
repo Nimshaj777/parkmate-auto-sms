@@ -1,16 +1,16 @@
 project_id = "mdvqscuwvypfvyjupulg"
 
 [functions.validate-activation-code]
-verify_jwt = false
+verify_jwt = true
 
 [functions.check-trial-eligibility]
-verify_jwt = false
+verify_jwt = true
 
 [functions.start-free-trial]
-verify_jwt = false
+verify_jwt = true
 
 [functions.get-subscription-status]
-verify_jwt = false
+verify_jwt = true
 
 [functions.activate-villa-subscription]
-verify_jwt = false
+verify_jwt = true
