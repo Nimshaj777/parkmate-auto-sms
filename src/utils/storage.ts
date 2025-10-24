@@ -79,22 +79,15 @@ export class LocalStorage {
     }
   }
 
+  // DEPRECATED: Use SubscriptionAPI.getSubscriptionStatus() instead
+  // Subscription status is now server-side only for security
   static async getSubscriptionStatus(): Promise<SubscriptionStatus> {
-    try {
-      const { value } = await Storage.get({ key: this.SUBSCRIPTION_KEY });
-      return value ? JSON.parse(value) : {
-        isActive: true, // 3-day trial
-        type: 'trial',
-        expiresAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
-      };
-    } catch (error) {
-      console.error('Error getting subscription:', error);
-      return {
-        isActive: true,
-        type: 'trial',
-        expiresAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
-      };
-    }
+    console.warn('LocalStorage.getSubscriptionStatus() is deprecated. Use SubscriptionAPI.getSubscriptionStatus() instead.');
+    return {
+      isActive: false,
+      type: 'trial',
+      expiresAt: undefined
+    };
   }
 
   // Villa management
@@ -153,81 +146,39 @@ export class LocalStorage {
     }
   }
 
+  // DEPRECATED: Subscription status is now server-side only
   static async saveSubscriptionStatus(status: SubscriptionStatus): Promise<void> {
-    try {
-      await Storage.set({
-        key: this.SUBSCRIPTION_KEY,
-        value: JSON.stringify(status)
-      });
-    } catch (error) {
-      console.error('Error saving subscription:', error);
-    }
+    console.warn('LocalStorage.saveSubscriptionStatus() is deprecated and does nothing.');
   }
 
-  // Activation codes management
-  static async getActivationCodes(): Promise<import('./subscription').ActivationCode[]> {
-    try {
-      const { value } = await Storage.get({ key: 'activation_codes' });
-      return value ? JSON.parse(value) : [];
-    } catch (error) {
-      console.error('Error getting activation codes:', error);
-      return [];
-    }
+  // DEPRECATED: Activation codes are now server-side only
+  static async getActivationCodes(): Promise<any[]> {
+    console.warn('LocalStorage.getActivationCodes() is deprecated.');
+    return [];
   }
 
-  static async saveActivationCodes(codes: import('./subscription').ActivationCode[]): Promise<void> {
-    try {
-      await Storage.set({
-        key: 'activation_codes',
-        value: JSON.stringify(codes)
-      });
-    } catch (error) {
-      console.error('Error saving activation codes:', error);
-    }
+  static async saveActivationCodes(codes: any[]): Promise<void> {
+    console.warn('LocalStorage.saveActivationCodes() is deprecated and does nothing.');
   }
 
-  // Trial devices management
-  static async getTrialDevices(): Promise<import('./subscription').DeviceInfo[]> {
-    try {
-      const { value } = await Storage.get({ key: 'trial_devices' });
-      return value ? JSON.parse(value) : [];
-    } catch (error) {
-      console.error('Error getting trial devices:', error);
-      return [];
-    }
+  // DEPRECATED: Trial tracking is now server-side only
+  static async getTrialDevices(): Promise<any[]> {
+    console.warn('LocalStorage.getTrialDevices() is deprecated.');
+    return [];
   }
 
-  static async saveTrialDevices(devices: import('./subscription').DeviceInfo[]): Promise<void> {
-    try {
-      await Storage.set({
-        key: 'trial_devices',
-        value: JSON.stringify(devices)
-      });
-    } catch (error) {
-      console.error('Error saving trial devices:', error);
-    }
+  static async saveTrialDevices(devices: any[]): Promise<void> {
+    console.warn('LocalStorage.saveTrialDevices() is deprecated and does nothing.');
   }
 
-  // Trial IPs management (web only)
+  // DEPRECATED: Trial tracking is now server-side only
   static async getTrialIPs(): Promise<string[]> {
-    try {
-      const { value } = await Storage.get({ key: 'trial_ips' });
-      return value ? JSON.parse(value) : [];
-    } catch (error) {
-      console.error('Error getting trial IPs:', error);
-      return [];
-    }
+    console.warn('LocalStorage.getTrialIPs() is deprecated.');
+    return [];
   }
 
   static async saveTrialIPs(ips: string[]): Promise<void> {
-    try {
-      await Storage.set({
-        key: 'trial_ips',
-        value: JSON.stringify(ips)
-      });
-    } catch (error) {
-      console.error('Error saving trial IPs:', error);
-    }
+    console.warn('LocalStorage.saveTrialIPs() is deprecated and does nothing.');
   }
 
   // SMS History management

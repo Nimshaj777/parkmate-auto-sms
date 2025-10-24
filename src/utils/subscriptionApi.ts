@@ -2,6 +2,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { Device } from '@capacitor/device';
 import type { SubscriptionStatus } from '@/types';
 
+/**
+ * Subscription API - All validation happens server-side
+ * Client only queries subscription status, never validates locally
+ */
 export class SubscriptionAPI {
   /**
    * Get device ID using Capacitor Device plugin
