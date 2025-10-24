@@ -86,6 +86,45 @@ export type Database = {
         }
         Relationships: []
       }
+      user_automation_schedules: {
+        Row: {
+          created_at: string
+          days_of_week: number[]
+          duration: number
+          id: string
+          is_enabled: boolean
+          time: string
+          updated_at: string
+          user_id: string
+          vehicle_id: string
+          villa_id: string
+        }
+        Insert: {
+          created_at?: string
+          days_of_week: number[]
+          duration: number
+          id?: string
+          is_enabled?: boolean
+          time: string
+          updated_at?: string
+          user_id: string
+          vehicle_id: string
+          villa_id: string
+        }
+        Update: {
+          created_at?: string
+          days_of_week?: number[]
+          duration?: number
+          id?: string
+          is_enabled?: boolean
+          time?: string
+          updated_at?: string
+          user_id?: string
+          vehicle_id?: string
+          villa_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -103,6 +142,36 @@ export type Database = {
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_settings: {
+        Row: {
+          created_at: string
+          id: string
+          language: string
+          notifications_enabled: boolean
+          time_format: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          language?: string
+          notifications_enabled?: boolean
+          time_format?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          language?: string
+          notifications_enabled?: boolean
+          time_format?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
@@ -143,6 +212,69 @@ export type Database = {
           subscription_type?: string
           user_id?: string
           villa_limit?: number
+        }
+        Relationships: []
+      }
+      user_vehicles: {
+        Row: {
+          created_at: string
+          id: string
+          is_default: boolean
+          registration_number: string
+          updated_at: string
+          user_id: string
+          vehicle_type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          registration_number: string
+          updated_at?: string
+          user_id: string
+          vehicle_type?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          registration_number?: string
+          updated_at?: string
+          user_id?: string
+          vehicle_type?: string
+        }
+        Relationships: []
+      }
+      user_villas: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          phone_number: string
+          updated_at: string
+          user_id: string
+          villa_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          phone_number: string
+          updated_at?: string
+          user_id: string
+          villa_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          phone_number?: string
+          updated_at?: string
+          user_id?: string
+          villa_id?: string
         }
         Relationships: []
       }
