@@ -1,54 +1,65 @@
-import { supabase } from '@/integrations/supabase/client';
-import type { Vehicle, Villa, AutomationSchedule, AppSettings } from '@/types';
+import { supabase } from "@/integrations/supabase/client";
+import type { Vehicle, Villa, AutomationSchedule, AppSettings } from "@/types";
+import { VillaSubscriptionAPI } from "./villaSubscriptionApi";
 
-/**
- * Database API for user data
- * All data is stored server-side and protected by RLS policies
- */
 export class DatabaseAPI {
-  /**
-   * VEHICLES
-   */
+  // Vehicles Management
+  
   static async getVehicles(): Promise<Vehicle[]> {
-    const { data, error } = await supabase
-      .from('user_vehicles')
-      .select('*')
-      .order('created_at', { ascending: false });
+    try {
+      const deviceId = await VillaSubscriptionAPI.getDeviceId();
 
-    if (error) {
-      console.error('Error fetching vehicles:', error);
+      const { data, error } = await supabase
+        .from('user_vehicles')
+        .select('*')
+        .eq('device_id', deviceId);
+
+      if (error) {
+        console.error('Error fetching vehicles:', error);
+        return [];
+      }
+
+      return (data || []).map(v => ({
+        id: v.id,
+        plateNumber: v.registration_number,
+        roomName: '', // Not stored in DB yet
+        smsMessage: '', // Not stored in DB yet
+        status: 'pending' as const,
+        villaId: '', // Not stored in DB yet
+        serialNumber: 0, // Not stored in DB yet
+        createdAt: new Date(v.created_at),
+        updatedAt: new Date(v.updated_at)
+      }));
+    } catch (error) {
+      console.error('Error in getVehicles:', error);
       return [];
     }
-
-    return (data || []).map(v => ({
-      id: v.id,
-      plateNumber: v.registration_number,
-      roomName: '', // Not stored in DB yet
-      smsMessage: '', // Not stored in DB yet
-      status: 'pending' as const,
-      villaId: '', // Not stored in DB yet
-      serialNumber: 0, // Not stored in DB yet
-      createdAt: new Date(v.created_at),
-      updatedAt: new Date(v.updated_at)
-    }));
   }
 
-  static async addVehicle(registrationNumber: string, vehicleType: string = 'car', isDefault: boolean = false): Promise<void> {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('User not authenticated');
+  static async addVehicle(
+    registrationNumber: string, 
+    vehicleType: string = 'car',
+    isDefault: boolean = false
+  ): Promise<void> {
+    try {
+      const deviceId = await VillaSubscriptionAPI.getDeviceId();
 
-    const { error } = await supabase
-      .from('user_vehicles')
-      .insert([{
-        user_id: user.id,
-        registration_number: registrationNumber,
-        vehicle_type: vehicleType,
-        is_default: isDefault
-      }]);
+      const { error } = await supabase
+        .from('user_vehicles')
+        .insert([{
+          device_id: deviceId,
+          registration_number: registrationNumber,
+          vehicle_type: vehicleType,
+          is_default: isDefault,
+        }]);
 
-    if (error) {
-      console.error('Error adding vehicle:', error);
-      throw new Error('Failed to add vehicle');
+      if (error) {
+        console.error('Error adding vehicle:', error);
+        throw new Error('Failed to add vehicle');
+      }
+    } catch (error) {
+      console.error('Error in addVehicle:', error);
+      throw error;
     }
   }
 
@@ -76,46 +87,59 @@ export class DatabaseAPI {
     }
   }
 
-  /**
-   * VILLAS
-   */
+  // Villas Management
+  
   static async getVillas(): Promise<Villa[]> {
-    const { data, error } = await supabase
-      .from('user_villas')
-      .select('*')
-      .order('created_at', { ascending: false });
+    try {
+      const deviceId = await VillaSubscriptionAPI.getDeviceId();
 
-    if (error) {
-      console.error('Error fetching villas:', error);
+      const { data, error } = await supabase
+        .from('user_villas')
+        .select('*')
+        .eq('device_id', deviceId);
+
+      if (error) {
+        console.error('Error fetching villas:', error);
+        return [];
+      }
+
+      return (data || []).map(v => ({
+        id: v.villa_id,
+        name: v.name,
+        defaultSmsNumber: v.phone_number,
+        createdAt: new Date(v.created_at),
+        updatedAt: new Date(v.updated_at)
+      }));
+    } catch (error) {
+      console.error('Error in getVillas:', error);
       return [];
     }
-
-    return (data || []).map(v => ({
-      id: v.villa_id,
-      name: v.name,
-      defaultSmsNumber: v.phone_number,
-      createdAt: new Date(v.created_at),
-      updatedAt: new Date(v.updated_at)
-    }));
   }
 
-  static async addVilla(villaId: string, name: string, phoneNumber: string): Promise<void> {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('User not authenticated');
+  static async addVilla(
+    villaId: string,
+    name: string,
+    phoneNumber: string
+  ): Promise<void> {
+    try {
+      const deviceId = await VillaSubscriptionAPI.getDeviceId();
 
-    const { error } = await supabase
-      .from('user_villas')
-      .insert([{
-        user_id: user.id,
-        villa_id: villaId,
-        name,
-        phone_number: phoneNumber,
-        is_active: true
-      }]);
+      const { error } = await supabase
+        .from('user_villas')
+        .insert([{
+          device_id: deviceId,
+          villa_id: villaId,
+          name: name,
+          phone_number: phoneNumber,
+        }]);
 
-    if (error) {
-      console.error('Error adding villa:', error);
-      throw new Error('Failed to add villa');
+      if (error) {
+        console.error('Error adding villa:', error);
+        throw new Error('Failed to add villa');
+      }
+    } catch (error) {
+      console.error('Error in addVilla:', error);
+      throw error;
     }
   }
 
@@ -143,50 +167,65 @@ export class DatabaseAPI {
     }
   }
 
-  /**
-   * AUTOMATION SCHEDULES
-   */
+  // Automation Schedules Management
+  
   static async getAutomationSchedules(): Promise<AutomationSchedule[]> {
-    const { data, error } = await supabase
-      .from('user_automation_schedules')
-      .select('*')
-      .order('created_at', { ascending: false });
+    try {
+      const deviceId = await VillaSubscriptionAPI.getDeviceId();
 
-    if (error) {
-      console.error('Error fetching schedules:', error);
+      const { data, error } = await supabase
+        .from('user_automation_schedules')
+        .select('*')
+        .eq('device_id', deviceId);
+
+      if (error) {
+        console.error('Error fetching schedules:', error);
+        return [];
+      }
+
+      return (data || []).map(s => ({
+        id: s.id,
+        villaId: s.villa_id,
+        enabled: s.is_enabled,
+        time: s.time,
+        daysOfWeek: s.days_of_week.map((d: number) => d === 1), // Convert array of ints to booleans
+        createdAt: new Date(s.created_at),
+        updatedAt: new Date(s.updated_at)
+      }));
+    } catch (error) {
+      console.error('Error in getAutomationSchedules:', error);
       return [];
     }
-
-    return (data || []).map(s => ({
-      id: s.id,
-      villaId: s.villa_id,
-      enabled: s.is_enabled,
-      time: s.time,
-      daysOfWeek: s.days_of_week.map((d: number) => d === 1), // Convert array of ints to booleans
-      createdAt: new Date(s.created_at),
-      updatedAt: new Date(s.updated_at)
-    }));
   }
 
-  static async addSchedule(villaId: string, vehicleId: string, daysOfWeek: number[], time: string, duration: number): Promise<void> {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('User not authenticated');
+  static async addSchedule(
+    villaId: string,
+    vehicleId: string,
+    daysOfWeek: number[],
+    time: string,
+    duration: number
+  ): Promise<void> {
+    try {
+      const deviceId = await VillaSubscriptionAPI.getDeviceId();
 
-    const { error } = await supabase
-      .from('user_automation_schedules')
-      .insert([{
-        user_id: user.id,
-        villa_id: villaId,
-        vehicle_id: vehicleId,
-        days_of_week: daysOfWeek,
-        time,
-        duration,
-        is_enabled: true
-      }]);
+      const { error } = await supabase
+        .from('user_automation_schedules')
+        .insert([{
+          device_id: deviceId,
+          villa_id: villaId,
+          vehicle_id: vehicleId,
+          days_of_week: daysOfWeek,
+          time: time,
+          duration: duration,
+        }]);
 
-    if (error) {
-      console.error('Error adding schedule:', error);
-      throw new Error('Failed to add schedule');
+      if (error) {
+        console.error('Error adding schedule:', error);
+        throw new Error('Failed to add schedule');
+      }
+    } catch (error) {
+      console.error('Error in addSchedule:', error);
+      throw error;
     }
   }
 
@@ -214,17 +253,36 @@ export class DatabaseAPI {
     }
   }
 
-  /**
-   * USER SETTINGS
-   */
+  // User Settings Management
+  
   static async getSettings(): Promise<AppSettings> {
-    const { data, error } = await supabase
-      .from('user_settings')
-      .select('*')
-      .single();
+    try {
+      const deviceId = await VillaSubscriptionAPI.getDeviceId();
 
-    if (error || !data) {
-      // Return defaults if no settings found
+      const { data, error } = await supabase
+        .from('user_settings')
+        .select('*')
+        .eq('device_id', deviceId)
+        .maybeSingle();
+
+      if (error || !data) {
+        // Return defaults if no settings found
+        return {
+          language: 'en',
+          defaultSmsNumber: '3009',
+          notificationsEnabled: true,
+          automationEnabled: false
+        };
+      }
+
+      return {
+        language: data.language as 'en' | 'ar' | 'hi',
+        defaultSmsNumber: '3009', // Not stored in DB yet
+        notificationsEnabled: data.notifications_enabled,
+        automationEnabled: false // Not stored in DB yet
+      };
+    } catch (error) {
+      console.error('Error in getSettings:', error);
       return {
         language: 'en',
         defaultSmsNumber: '3009',
@@ -232,31 +290,30 @@ export class DatabaseAPI {
         automationEnabled: false
       };
     }
-
-    return {
-      language: data.language as 'en' | 'ar' | 'hi',
-      defaultSmsNumber: '3009', // Not stored in DB yet
-      notificationsEnabled: data.notifications_enabled,
-      automationEnabled: false // Not stored in DB yet
-    };
   }
 
   static async saveSettings(settings: AppSettings): Promise<void> {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('User not authenticated');
+    try {
+      const deviceId = await VillaSubscriptionAPI.getDeviceId();
 
-    const { error } = await supabase
-      .from('user_settings')
-      .upsert([{
-        user_id: user.id,
-        language: settings.language,
-        notifications_enabled: settings.notificationsEnabled,
-        time_format: '12h' // Default
-      }]);
+      const { error } = await supabase
+        .from('user_settings')
+        .upsert([{
+          device_id: deviceId,
+          language: settings.language,
+          notifications_enabled: settings.notificationsEnabled,
+          time_format: '12h' // Default
+        }], {
+          onConflict: 'device_id'
+        });
 
-    if (error) {
-      console.error('Error saving settings:', error);
-      throw new Error('Failed to save settings');
+      if (error) {
+        console.error('Error saving settings:', error);
+        throw new Error('Failed to save settings');
+      }
+    } catch (error) {
+      console.error('Error in saveSettings:', error);
+      throw error;
     }
   }
 }

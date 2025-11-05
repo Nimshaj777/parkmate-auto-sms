@@ -9,7 +9,6 @@ const corsHeaders = {
 
 const requestSchema = z.object({
   deviceId: z.string().trim().min(1).max(100).regex(/^[a-zA-Z0-9_-]+$/),
-  ipFingerprint: z.string().trim().max(100).optional(),
 });
 
 serve(async (req) => {
@@ -18,15 +17,6 @@ serve(async (req) => {
   }
 
   try {
-    // Get user from JWT token
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Authentication required' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
     const body = await req.json();
     
     // Validate input
@@ -39,94 +29,48 @@ serve(async (req) => {
       );
     }
 
-    const { deviceId, ipFingerprint } = validation.data;
+    const { deviceId } = validation.data;
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Get authenticated user
-    const supabaseAuth = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
-    );
-
-    const { data: { user }, error: userError } = await supabaseAuth.auth.getUser();
-    if (userError || !user) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Invalid authentication' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Check eligibility first
-    const { data: deviceData } = await supabase
-      .from('trial_devices')
+    // Check if device has already used trial
+    const { data: existingSubscription } = await supabase
+      .from('user_subscriptions')
       .select('*')
       .eq('device_id', deviceId)
-      .single();
+      .eq('subscription_type', 'trial')
+      .maybeSingle();
 
-    if (deviceData && deviceData.has_used_trial) {
+    if (existingSubscription) {
       return new Response(
         JSON.stringify({ success: false, error: 'Device has already used trial' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Check IP eligibility (if provided)
-    if (ipFingerprint) {
-      const { data: ipData } = await supabase
-        .from('trial_devices')
-        .select('*')
-        .eq('ip_fingerprint', ipFingerprint)
-        .eq('has_used_trial', true);
+    // Create 3-day trial subscription
+    const expiryDate = new Date();
+    expiryDate.setDate(expiryDate.getDate() + 3);
 
-      if (ipData && ipData.length > 0) {
-        return new Response(
-          JSON.stringify({ success: false, error: 'IP address has already used trial' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-    }
-
-    // Register trial device
-    const { error: deviceError } = await supabase
-      .from('trial_devices')
-      .upsert({
-        device_id: deviceId,
-        ip_fingerprint: ipFingerprint || null,
-        has_used_trial: true,
-        trial_started_at: new Date().toISOString()
-      });
-
-    if (deviceError) {
-      console.error('Error registering trial device:', deviceError);
-      return new Response(
-        JSON.stringify({ success: false, error: 'Failed to register trial' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Create trial subscription (3 days)
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 3);
-
-    const { error: subError } = await supabase
+    const { error: subscriptionError } = await supabase
       .from('user_subscriptions')
-      .insert({
-        user_id: user.id,
+      .insert([{
         device_id: deviceId,
-        subscription_type: 'trial',
+        user_id: null,
         is_active: true,
-        expires_at: expiresAt.toISOString()
-      });
+        started_at: new Date().toISOString(),
+        expires_at: expiryDate.toISOString(),
+        subscription_type: 'trial',
+        villa_limit: 1,
+      }]);
 
-    if (subError) {
-      console.error('Error creating trial subscription:', subError);
+    if (subscriptionError) {
+      console.error('Error creating trial subscription:', subscriptionError);
       return new Response(
-        JSON.stringify({ success: false, error: 'Failed to create trial subscription' }),
+        JSON.stringify({ success: false, error: 'Failed to start trial' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -137,7 +81,8 @@ serve(async (req) => {
         subscription: {
           isActive: true,
           type: 'trial',
-          expiresAt: expiresAt.toISOString()
+          expiresAt: expiryDate.toISOString(),
+          villaLimit: 1
         }
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

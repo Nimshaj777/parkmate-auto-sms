@@ -8,7 +8,7 @@ const corsHeaders = {
 };
 
 const requestSchema = z.object({
-  deviceId: z.string().trim().min(1).max(100).regex(/^[a-zA-Z0-9_-]+$/),
+  deviceId: z.string().trim().min(1).max(100),
 });
 
 serve(async (req) => {
@@ -17,15 +17,6 @@ serve(async (req) => {
   }
 
   try {
-    // Get user from JWT token
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: 'Authentication required' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
     const body = await req.json();
     
     // Validate input
@@ -33,69 +24,67 @@ serve(async (req) => {
     if (!validation.success) {
       console.error('Validation error:', validation.error);
       return new Response(
-        JSON.stringify({ error: 'Invalid input parameters' }),
+        JSON.stringify({
+          isActive: false,
+          type: 'trial',
+          expiresAt: new Date().toISOString()
+        }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     const { deviceId } = validation.data;
 
+    // Create service role client
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Get authenticated user
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
-      return new Response(
-        JSON.stringify({ error: 'Invalid authentication' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Get latest subscription for this user
-    const { data: subscriptions, error } = await supabase
+    // Get latest subscription for this device
+    const { data: subscription, error } = await supabase
       .from('user_subscriptions')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('device_id', deviceId)
       .order('created_at', { ascending: false })
-      .limit(1);
+      .limit(1)
+      .maybeSingle();
 
     if (error) {
       console.error('Error fetching subscription:', error);
       return new Response(
-        JSON.stringify({ error: 'Failed to fetch subscription' }),
+        JSON.stringify({
+          isActive: false,
+          type: 'trial',
+          expiresAt: new Date().toISOString()
+        }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    if (!subscriptions || subscriptions.length === 0) {
+    // If no subscription found, return inactive trial
+    if (!subscription) {
       return new Response(
         JSON.stringify({
-          subscription: {
-            isActive: false,
-            type: 'trial',
-            expiresAt: null
-          }
+          isActive: false,
+          type: 'trial',
+          expiresAt: new Date().toISOString(),
+          villaLimit: 0
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const subscription = subscriptions[0];
-    const isExpired = new Date(subscription.expires_at) < new Date();
+    // Check if subscription is still active
+    const isActive = subscription.is_active && 
+                    new Date(subscription.expires_at) > new Date();
 
     return new Response(
       JSON.stringify({
-        subscription: {
-          isActive: !isExpired && subscription.is_active,
-          type: subscription.subscription_type,
-          expiresAt: subscription.expires_at,
-          activationCode: subscription.activation_code || undefined,
-          villaLimit: subscription.villa_limit || 1
-        }
+        isActive,
+        type: subscription.subscription_type,
+        expiresAt: subscription.expires_at,
+        villaLimit: subscription.villa_limit || 1
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
@@ -103,7 +92,11 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({
+        isActive: false,
+        type: 'trial',
+        expiresAt: new Date().toISOString()
+      }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

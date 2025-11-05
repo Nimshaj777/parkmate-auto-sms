@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
@@ -8,27 +8,17 @@ const corsHeaders = {
 };
 
 const requestSchema = z.object({
-  code: z.string().trim().regex(/^PK\d{6}[A-Z]{2}$/),
-  deviceId: z.string().trim().min(1).max(100).regex(/^[a-zA-Z0-9_-]+$/),
-  villaId: z.string().trim().min(1).max(50).regex(/^[a-zA-Z0-9_-]+$/),
+  code: z.string().trim().min(1).max(50),
+  deviceId: z.string().trim().min(1).max(100),
+  villaId: z.string().trim().min(1).max(50),
 });
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Get user from JWT token
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Authentication required' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
     const body = await req.json();
     
     // Validate input
@@ -36,272 +26,157 @@ serve(async (req) => {
     if (!validation.success) {
       console.error('Validation error:', validation.error);
       return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: 'Invalid input parameters' 
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+        JSON.stringify({ success: false, error: 'Invalid input parameters' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     const { code, deviceId, villaId } = validation.data;
 
-    console.log('Activating villa subscription:', { code, deviceId, villaId });
+    // Create service role client
+    const supabaseServiceRole = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-
-    // Initialize Supabase clients
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } }
-    });
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
-
-    // Get authenticated user
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Invalid authentication' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Check if villa already has an active subscription
-    const { data: existingVillaSub, error: existingSubError } = await supabaseAdmin
+    // Check for existing active subscription for this villa and device
+    const { data: existingSubscription } = await supabaseServiceRole
       .from('villa_subscriptions')
       .select('*')
       .eq('villa_id', villaId)
-      .eq('user_id', user.id)
-      .single();
+      .eq('device_id', deviceId)
+      .eq('is_active', true)
+      .gt('expires_at', new Date().toISOString())
+      .maybeSingle();
 
-    if (existingSubError && existingSubError.code !== 'PGRST116') {
-      console.error('Error checking existing villa subscription:', existingSubError);
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: 'Error checking existing subscription' 
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-      );
-    }
-
-    if (existingVillaSub && existingVillaSub.is_active && new Date(existingVillaSub.expires_at) > new Date()) {
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: 'This villa already has an active subscription',
-          message: `Expires on ${new Date(existingVillaSub.expires_at).toLocaleDateString()}`
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
-      );
-    }
-
-    // Check if code exists and is valid
-    const { data: activationCode, error: codeError } = await supabaseAdmin
+    // Validate activation code
+    const { data: codeData, error: codeError } = await supabaseServiceRole
       .from('activation_codes')
       .select('*')
       .eq('code', code)
       .single();
 
-    if (codeError || !activationCode) {
-      console.error('Activation code not found:', codeError);
+    if (codeError || !codeData) {
+      console.error('Code lookup error:', codeError);
       return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: 'Invalid activation code' 
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+        JSON.stringify({ success: false, error: 'Invalid activation code' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Check if code has already been used
-    if (activationCode.is_used) {
-      // If code is used, check if it's being reused by the same device
-      if (activationCode.used_by_device_id !== deviceId) {
-        return new Response(
-          JSON.stringify({ 
-            success: false, 
-            error: 'This activation code has already been used by another device' 
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
-        );
-      }
+    // Check if code has expired
+    if (codeData.expires_at && new Date(codeData.expires_at) < new Date()) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Activation code has expired' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
-      // Check if code's validity period has expired (30 days from first use)
-      if (activationCode.used_at) {
-        const firstUsedDate = new Date(activationCode.used_at);
-        const expiryDate = new Date(firstUsedDate);
-        expiryDate.setDate(expiryDate.getDate() + activationCode.duration);
-        
-        if (new Date() > expiryDate) {
-          return new Response(
-            JSON.stringify({ 
-              success: false, 
-              error: 'This activation code has expired (30 days from first use)' 
-            }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
-          );
-        }
-      }
+    // Check villa activation limit on the code
+    const { data: villaActivations, error: countError } = await supabaseServiceRole
+      .from('villa_subscriptions')
+      .select('villa_id', { count: 'exact', head: false })
+      .eq('activation_code', code);
 
-      // Check villa_count limit - count how many villas this code has activated
-      const { data: existingActivations, error: countError } = await supabaseAdmin
-        .from('villa_subscriptions')
-        .select('id, villa_id, expires_at, activated_at')
-        .eq('activation_code', code)
-        .eq('user_id', user.id)
-        .order('activated_at', { ascending: false });
+    if (countError) {
+      console.error('Error counting villa activations:', countError);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Failed to verify code usage' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
-      if (countError) {
-        console.error('Error counting existing activations:', countError);
-        return new Response(
-          JSON.stringify({ 
-            success: false, 
-            error: 'Error checking activation limit' 
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-        );
-      }
+    // Get unique villas activated with this code
+    const uniqueVillas = new Set((villaActivations || []).map(v => v.villa_id));
+    
+    // Check if this is a new villa activation (not extending existing)
+    if (!existingSubscription && uniqueVillas.size >= codeData.villa_count) {
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: `This activation code has reached its villa limit (${codeData.villa_count} villas)` 
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
-      const villaCount = activationCode.villa_count || 1;
-      const uniqueVillas = new Set(existingActivations?.map(a => a.villa_id) || []);
+    let newExpiryDate: Date;
+    let message: string;
+
+    if (existingSubscription) {
+      // Extend existing subscription
+      const currentExpiry = new Date(existingSubscription.expires_at);
+      newExpiryDate = new Date(currentExpiry);
+      newExpiryDate.setDate(newExpiryDate.getDate() + codeData.duration);
       
-      // If this villa is already activated, allow reactivation (extension)
-      if (!uniqueVillas.has(villaId) && uniqueVillas.size >= villaCount) {
-        // Do NOT transfer subscriptions between villas. Enforce per-code villa limit strictly.
-        return new Response(
-          JSON.stringify({ 
-            success: false, 
-            error: `This activation code can only activate ${villaCount} villa(s) and is already assigned to another villa on this device.` 
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
-        );
-      }
-    }
-
-    // Check if code has expired (for unused codes)
-    if (!activationCode.is_used && activationCode.expires_at && new Date(activationCode.expires_at) < new Date()) {
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: 'This activation code has expired' 
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
-      );
-    }
-
-    // Calculate expiration date
-    const duration = activationCode.duration || 30;
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + duration);
-
-    // If villa already has a subscription, extend it
-    if (existingVillaSub) {
-      const currentExpiry = new Date(existingVillaSub.expires_at);
-      const newExpiry = currentExpiry > new Date() ? currentExpiry : new Date();
-      newExpiry.setDate(newExpiry.getDate() + duration);
-
-      const { error: updateError } = await supabaseAdmin
+      const { error: updateError } = await supabaseServiceRole
         .from('villa_subscriptions')
-        .update({
-          activation_code: code,
-          is_active: true,
-          expires_at: newExpiry.toISOString(),
-        })
-        .eq('id', existingVillaSub.id);
+        .update({ expires_at: newExpiryDate.toISOString() })
+        .eq('id', existingSubscription.id);
 
       if (updateError) {
-        console.error('Error extending villa subscription:', updateError);
+        console.error('Error extending subscription:', updateError);
         return new Response(
-          JSON.stringify({ 
-            success: false, 
-            error: 'Error extending villa subscription' 
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+          JSON.stringify({ success: false, error: 'Failed to extend subscription' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
-      // Mark code as used
-      await supabaseAdmin
+      message = `Villa subscription extended! New expiry: ${newExpiryDate.toISOString()}`;
+    } else {
+      // Create new villa subscription
+      newExpiryDate = new Date();
+      newExpiryDate.setDate(newExpiryDate.getDate() + codeData.duration);
+
+      const { error: insertError } = await supabaseServiceRole
+        .from('villa_subscriptions')
+        .insert([{
+          villa_id: villaId,
+          device_id: deviceId,
+          user_id: null, // No user association
+          activation_code: code,
+          is_active: true,
+          activated_at: new Date().toISOString(),
+          expires_at: newExpiryDate.toISOString(),
+        }]);
+
+      if (insertError) {
+        console.error('Error creating villa subscription:', insertError);
+        return new Response(
+          JSON.stringify({ success: false, error: 'Failed to activate villa subscription' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      message = `Villa subscription activated! Expires: ${newExpiryDate.toISOString()}`;
+    }
+
+    // Mark code as used if not already
+    if (!codeData.is_used) {
+      await supabaseServiceRole
         .from('activation_codes')
         .update({
           is_used: true,
-          used_at: new Date().toISOString(),
           used_by_device_id: deviceId,
+          used_at: new Date().toISOString(),
         })
-        .eq('code', code);
-
-      return new Response(
-        JSON.stringify({ 
-          success: true,
-          message: `Villa subscription extended by ${duration} days`,
-          subscription: {
-            villaId,
-            isActive: true,
-            expiresAt: newExpiry.toISOString(),
-          }
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
-      );
+        .eq('id', codeData.id);
     }
-
-    // Create new villa subscription
-    const { error: insertError } = await supabaseAdmin
-      .from('villa_subscriptions')
-      .insert({
-        villa_id: villaId,
-        device_id: deviceId,
-        user_id: user.id,
-        activation_code: code,
-        is_active: true,
-        expires_at: expiresAt.toISOString(),
-      });
-
-    if (insertError) {
-      console.error('Error creating villa subscription:', insertError);
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: 'Error creating villa subscription' 
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-      );
-    }
-
-    // Mark code as used
-    await supabaseAdmin
-      .from('activation_codes')
-      .update({
-        is_used: true,
-        used_at: new Date().toISOString(),
-        used_by_device_id: deviceId,
-      })
-      .eq('code', code);
-
-    console.log('Villa subscription activated successfully');
 
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         success: true,
-        message: `Villa activated for ${duration} days`,
-        subscription: {
-          villaId,
-          isActive: true,
-          expiresAt: expiresAt.toISOString(),
-        }
+        message,
+        expiresAt: newExpiryDate.toISOString()
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
-    console.error('Error in activate-villa-subscription:', error);
+    console.error('Error:', error);
     return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: error.message || 'Internal server error' 
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      JSON.stringify({ success: false, error: error.message }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });

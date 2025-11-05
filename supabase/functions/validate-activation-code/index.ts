@@ -8,8 +8,8 @@ const corsHeaders = {
 };
 
 const requestSchema = z.object({
-  code: z.string().trim().regex(/^PK\d{6}[A-Z]{2}$/),
-  deviceId: z.string().trim().min(1).max(100).regex(/^[a-zA-Z0-9_-]+$/),
+  code: z.string().trim().min(1).max(50),
+  deviceId: z.string().trim().min(1).max(100),
 });
 
 serve(async (req) => {
@@ -18,15 +18,6 @@ serve(async (req) => {
   }
 
   try {
-    // Get user from JWT token
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Authentication required' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
     const body = await req.json();
     
     // Validate input
@@ -41,120 +32,101 @@ serve(async (req) => {
 
     const { code, deviceId } = validation.data;
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
-    );
-
-    // Get authenticated user
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Invalid authentication' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Use service role to check and update the code
-    const supabaseAdmin = createClient(
+    // Create service role client (no auth required)
+    const supabaseServiceRole = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Check if code exists and is unused
-    const { data: codeData, error: codeError } = await supabaseAdmin
+    // Check if activation code exists and is valid
+    const { data: codeData, error: codeError } = await supabaseServiceRole
       .from('activation_codes')
       .select('*')
       .eq('code', code)
       .single();
 
     if (codeError || !codeData) {
+      console.error('Code lookup error:', codeError);
       return new Response(
         JSON.stringify({ success: false, error: 'Invalid activation code' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    // Check if code is already used
     if (codeData.is_used) {
       return new Response(
-        JSON.stringify({ success: false, error: 'This code has already been used' }),
+        JSON.stringify({ success: false, error: 'Activation code has already been used' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Check if code has expired (if expires_at is set)
+    // Check if code has expired
     if (codeData.expires_at && new Date(codeData.expires_at) < new Date()) {
       return new Response(
-        JSON.stringify({ success: false, error: 'This code has expired' }),
+        JSON.stringify({ success: false, error: 'Activation code has expired' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Check for existing active subscription to stack time
-    const { data: existingSubscriptions } = await supabaseAdmin
+    // Check for existing active subscription for this device
+    const { data: existingSubscription } = await supabaseServiceRole
       .from('user_subscriptions')
       .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(1);
+      .eq('device_id', deviceId)
+      .eq('is_active', true)
+      .gt('expires_at', new Date().toISOString())
+      .order('expires_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-    let expiresAt = new Date();
-    let subscriptionMessage = '';
+    let newExpiryDate: Date;
     
-    if (existingSubscriptions && existingSubscriptions.length > 0) {
-      const existing = existingSubscriptions[0];
-      const existingExpiry = new Date(existing.expires_at);
-      
-      // Stack time: If existing subscription not expired yet, add from expiry date
-      if (existingExpiry > new Date()) {
-        expiresAt = new Date(existingExpiry);
-        expiresAt.setDate(expiresAt.getDate() + codeData.duration);
-        subscriptionMessage = 'Subscription extended! Time added to existing subscription.';
-      } else {
-        // Expired subscription, start fresh from today
-        expiresAt.setDate(expiresAt.getDate() + codeData.duration);
-        subscriptionMessage = 'Subscription activated!';
-      }
+    if (existingSubscription) {
+      // Stack the new duration on top of existing subscription
+      const currentExpiry = new Date(existingSubscription.expires_at);
+      newExpiryDate = new Date(currentExpiry);
+      newExpiryDate.setDate(newExpiryDate.getDate() + codeData.duration);
     } else {
-      // No existing subscription, start fresh
-      expiresAt.setDate(expiresAt.getDate() + codeData.duration);
-      subscriptionMessage = 'Subscription activated!';
+      // No existing subscription, start from now
+      newExpiryDate = new Date();
+      newExpiryDate.setDate(newExpiryDate.getDate() + codeData.duration);
     }
 
     // Mark code as used
-    const { error: updateError } = await supabaseAdmin
+    const { error: updateError } = await supabaseServiceRole
       .from('activation_codes')
       .update({
         is_used: true,
         used_by_device_id: deviceId,
-        used_at: new Date().toISOString()
+        used_at: new Date().toISOString(),
       })
-      .eq('code', code);
+      .eq('id', codeData.id);
 
     if (updateError) {
       console.error('Error updating code:', updateError);
       return new Response(
-        JSON.stringify({ success: false, error: 'Failed to activate code' }),
+        JSON.stringify({ success: false, error: 'Failed to process activation code' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Create new subscription (stacked)
-    const { error: subError } = await supabaseAdmin
+    // Create new subscription record
+    const { error: subscriptionError } = await supabaseServiceRole
       .from('user_subscriptions')
-      .insert({
-        user_id: user.id,
+      .insert([{
         device_id: deviceId,
-        subscription_type: 'activation_code',
+        user_id: null, // No user association
         is_active: true,
+        started_at: new Date().toISOString(),
+        expires_at: newExpiryDate.toISOString(),
+        subscription_type: 'paid',
+        villa_limit: codeData.villa_count,
         activation_code: code,
-        villa_limit: codeData.villa_count || 1,
-        expires_at: expiresAt.toISOString()
-      });
+      }]);
 
-    if (subError) {
-      console.error('Error creating subscription:', subError);
+    if (subscriptionError) {
+      console.error('Error creating subscription:', subscriptionError);
       return new Response(
         JSON.stringify({ success: false, error: 'Failed to create subscription' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -164,13 +136,14 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        message: subscriptionMessage,
+        message: existingSubscription 
+          ? `Subscription extended! New expiry date: ${newExpiryDate.toISOString()}`
+          : `Subscription activated! Expires: ${newExpiryDate.toISOString()}`,
         subscription: {
           isActive: true,
-          type: 'activation_code',
-          expiresAt: expiresAt.toISOString(),
-          activationCode: code,
-          villaLimit: codeData.villa_count || 1
+          type: 'paid',
+          expiresAt: newExpiryDate.toISOString(),
+          villaLimit: codeData.villa_count,
         }
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

@@ -9,7 +9,6 @@ const corsHeaders = {
 
 const requestSchema = z.object({
   deviceId: z.string().trim().min(1).max(100).regex(/^[a-zA-Z0-9_-]+$/),
-  ipFingerprint: z.string().trim().max(100).optional(),
 });
 
 serve(async (req) => {
@@ -18,15 +17,6 @@ serve(async (req) => {
   }
 
   try {
-    // Get user from JWT token
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ eligible: false, error: 'Authentication required' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
     const body = await req.json();
     
     // Validate input
@@ -39,42 +29,26 @@ serve(async (req) => {
       );
     }
 
-    const { deviceId, ipFingerprint } = validation.data;
+    const { deviceId } = validation.data;
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
     // Check if device has already used trial
-    const { data: deviceData, error: deviceError } = await supabase
-      .from('trial_devices')
+    const { data: existingSubscription } = await supabase
+      .from('user_subscriptions')
       .select('*')
       .eq('device_id', deviceId)
-      .single();
+      .eq('subscription_type', 'trial')
+      .maybeSingle();
 
-    if (deviceData && deviceData.has_used_trial) {
+    if (existingSubscription) {
       return new Response(
         JSON.stringify({ eligible: false, reason: 'Device has already used trial' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
-    }
-
-    // Check if IP has already used trial (if IP fingerprint provided)
-    if (ipFingerprint) {
-      const { data: ipData, error: ipError } = await supabase
-        .from('trial_devices')
-        .select('*')
-        .eq('ip_fingerprint', ipFingerprint)
-        .eq('has_used_trial', true);
-
-      if (ipData && ipData.length > 0) {
-        return new Response(
-          JSON.stringify({ eligible: false, reason: 'IP address has already used trial' }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
     }
 
     return new Response(

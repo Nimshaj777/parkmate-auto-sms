@@ -40,10 +40,9 @@ export class SubscriptionAPI {
   static async checkTrialEligibility(): Promise<{ eligible: boolean; reason?: string }> {
     try {
       const deviceId = await this.getDeviceId();
-      const ipFingerprint = await this.getIpFingerprint();
 
       const { data, error } = await supabase.functions.invoke('check-trial-eligibility', {
-        body: { deviceId, ipFingerprint }
+        body: { deviceId }
       });
 
       if (error) throw error;
@@ -60,10 +59,9 @@ export class SubscriptionAPI {
   static async startFreeTrial(): Promise<{ success: boolean; subscription?: SubscriptionStatus; error?: string }> {
     try {
       const deviceId = await this.getDeviceId();
-      const ipFingerprint = await this.getIpFingerprint();
 
       const { data, error } = await supabase.functions.invoke('start-free-trial', {
-        body: { deviceId, ipFingerprint }
+        body: { deviceId }
       });
 
       if (error) throw error;
